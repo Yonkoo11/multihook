@@ -194,6 +194,13 @@ fn process_execute<'info>(
 
     let final_decision = allowlist_pass && sanctions_pass;
 
+    msg!(
+        "MetaHookAuditEvent: allowlist={} sanctions={} final={}",
+        allowlist_pass,
+        sanctions_pass,
+        final_decision
+    );
+
     emit!(MetaHookAuditEvent {
         mint: mint.key(),
         source: source.key(),

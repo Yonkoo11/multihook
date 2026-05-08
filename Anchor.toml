@@ -19,7 +19,7 @@ policy_sanctions_ofac = "5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
