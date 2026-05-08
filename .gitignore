@@ -1,0 +1,10 @@
+.anchor
+.DS_Store
+target
+**/*.rs.bk
+node_modules
+test-ledger
+.yarn
+
+# Don't commit deploy keypairs (or do, depending on your devnet vs prod setup; for now keep out)
+target/deploy/*-keypair.json
