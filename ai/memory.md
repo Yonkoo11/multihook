@@ -31,7 +31,23 @@
 - Multi-aggregation modes (V1: AND only; OR/weighted later)
 - Cross-issuer attestation reuse (V2)
 
-**Status:** [ ] NOT STARTED
+**Status:** [x] PHASE 1 LOGIC COMPLETE on local validator (7/7 integration tests pass).
+Open: Task 1.7 — Phantom devnet demo UI (requires deploying to devnet + serving an HTML page).
+
+**Verified 2026-05-08 via `anchor test`:**
+- Token-2022 invokes metahook.execute via the SPL transfer-hook fallback discriminator
+- metahook CPIs allowlist::check_transfer (depth 3), then sanctions::check_transfer (depth 3) — within the documented CPI ≤ 4 budget
+- `MetaHookAuditEvent` emitted with discriminator [212,7,92,54,249,97,146,65]; appears as a `Program data:` line in tx logs after both children resolve
+- Reentrancy guard byte at offset 8 of guard PDA flips 0→1→0 across execute(); also embedded in ExtraAccountMetaList as writable so any recursive entry would fail Solana's account-write exclusivity check
+
+**Program IDs (devnet + localnet):**
+- metahook: `4o6hRdZFqeM1YbvXQhjsmMgrNuoZSmgqMkpmZELBLh9d`
+- policy_allowlist: `GJHxobVdfywhTidD9u4EoYPGa9kBQVzEcZ7kDhVZehyn`
+- policy_sanctions_ofac: `5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt`
+
+**Build artifacts:** `target/deploy/{metahook,policy_allowlist,policy_sanctions_ofac}.so` + IDL JSON in `target/idl/`. Already deployed to devnet during early debug runs (program upgrades are authority-gated; same wallet redeploys).
+
+**Compute budget observed:** entire transfer-with-hook consumed 33,346 / 200,000 CU on Token-2022, of which metahook used 17,370 CU and each child ~2,100 CU. Plenty of headroom for V2 policies.
 
 ---
 

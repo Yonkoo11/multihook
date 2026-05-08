@@ -81,5 +81,34 @@ Phase 1 Gate tasks first. Don't move past one until binary success test passes.
 
 ---
 
-## Completed
-(builder fills this in)
+## Completed (2026-05-08)
+
+- [x] **Task 1.1** Anchor v0.32.1 workspace scaffold — `anchor build` produces three `.so`s + IDL JSON.
+- [x] **Task 1.2** metahook program — `initialize_extra_account_meta_list` + transfer-hook fallback dispatcher in place.
+- [x] **Task 1.3** policy-allowlist — Allowlist PDA, add/remove/check_transfer, has_one authority gating, dest-owner cracked from token bytes 32..64.
+- [x] **Task 1.4** policy-sanctions-ofac — OFACList PDA inverted check; revert string `policy.sanctions.fail` matches the spec.
+- [x] **Task 1.5** CPI delegation + reentrancy guard — metahook CPIs both children with manual Instruction+invoke (no workspace-circular cpi-feature pulls); ReentrancyGuard PDA byte flipped on entry/exit and included as writable in ExtraAccountMetaList.
+- [x] **Task 1.6** Token-2022 mint setup — covered by the integration test which creates the mint with TransferHook ext, initializes ExtraAccountMetaList, mints to source, runs the demo flow.
+- [x] **Task 1.8** Audit log event — `MetaHookAuditEvent { mint, source, destination, amount, allowlist_pass, sanctions_pass, final_decision }` emitted after both child verdicts resolve. Appears in logs as `Program data:` (base64) and as a `MetaHookAuditEvent: ...` `msg!` line for human readability.
+
+## Open
+
+- [ ] **Task 1.7** Phantom-signed devnet demo. Programs are already deployed on devnet (same IDs above) from one accidental deploy during debug, so the work here is:
+  1. Write `app/index.html` + `app/main.ts` (Phantom adapter, set the user as the new mint's owner, run mint+transfer-hook demo against deployed programs)
+  2. Host on GitHub Pages (per global rule)
+  3. Verify pass + fail paths show clear UI states with the audit event displayed
+
+## Test Results (2026-05-08, local validator)
+
+```
+multihook phase 1 gate
+  ✔ initializes reentrancy guard
+  ✔ initializes allowlist + ofac PDAs and seeds OFAC
+  ✔ creates Token-2022 mint with TransferHook ext + ExtraAccountMetaList
+  ✔ creates ATAs and mints to source
+  ✔ rejects transfer to non-allowlisted destination
+  ✔ rejects transfer to OFAC-sanctioned destination
+  ✔ approves allowlisted clean destination + emits audit event
+
+7 passing
+```
