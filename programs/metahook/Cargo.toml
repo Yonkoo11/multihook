@@ -25,6 +25,8 @@ anchor-spl = { version = "0.32.1", features = ["token_2022_extensions"] }
 spl-transfer-hook-interface = "0.10"
 spl-tlv-account-resolution = "0.10"
 spl-pod = "0.6"
+policy-allowlist = { path = "../policy-allowlist", features = ["cpi"] }
+policy-sanctions-ofac = { path = "../policy-sanctions-ofac", features = ["cpi"] }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

@@ -1043,6 +1043,8 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "policy-allowlist",
+ "policy-sanctions-ofac",
  "spl-pod 0.6.0",
  "spl-tlv-account-resolution",
  "spl-transfer-hook-interface",
