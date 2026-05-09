@@ -31,8 +31,11 @@
 - Multi-aggregation modes (V1: AND only; OR/weighted later)
 - Cross-issuer attestation reuse (V2)
 
-**Status:** [x] PHASE 1 LOGIC COMPLETE on local validator (7/7 integration tests pass).
-Open: Task 1.7 — Phantom devnet demo UI (requires deploying to devnet + serving an HTML page).
+**Status:** [x] PHASE 1 GATE PASSED end-to-end on Solana devnet (2026-05-09).
+- Logic: 7/7 integration tests pass on local validator (2026-05-08).
+- Phantom demo: live at https://yonkoo11.github.io/multihook/
+- Verified end-to-end via puppeteer on real devnet (FV3v…iKo9): provision tx, expect-fail tx (`policy.allowlist.fail` at depth 3), add-allowed tx, retry-success tx with MetaHookAuditEvent decoded (allowlist=pass, sanctions=pass, final=APPROVE), dest ATA balance = 100.
+- All on-chain state owned by the connecting Phantom wallet (each user provisions their own allowlist + OFAC + mint), so the demo works for arbitrary visitors with no shared admin state.
 
 **Verified 2026-05-08 via `anchor test`:**
 - Token-2022 invokes metahook.execute via the SPL transfer-hook fallback discriminator

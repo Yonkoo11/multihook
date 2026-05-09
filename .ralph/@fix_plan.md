@@ -93,10 +93,16 @@ Phase 1 Gate tasks first. Don't move past one until binary success test passes.
 
 ## Open
 
-- [ ] **Task 1.7** Phantom-signed devnet demo. Programs are already deployed on devnet (same IDs above) from one accidental deploy during debug, so the work here is:
-  1. Write `app/index.html` + `app/main.ts` (Phantom adapter, set the user as the new mint's owner, run mint+transfer-hook demo against deployed programs)
-  2. Host on GitHub Pages (per global rule)
-  3. Verify pass + fail paths show clear UI states with the audit event displayed
+(Phase 1 complete — all gate tasks 1.1–1.8 closed. Phase 2 next.)
+
+## Phase 1 close-out (2026-05-09)
+
+- [x] **Task 1.7** Phantom-signed devnet demo — live at https://yonkoo11.github.io/multihook/
+  - Vite + TS app at `app/`, production build committed to `docs/` for GH Pages
+  - Real Phantom adapter (`window.solana`) for production; dev-only mock provider gated behind `import.meta.env.DEV` + `?test=1` (tree-shaken from production bundle, verified by grep)
+  - End-to-end verified via puppeteer on real devnet: 4 transactions land — provision (mint + ATAs + ExtraAccountMetaList), expect-fail transfer (reverts with `policy.allowlist.fail` from depth-3 CPI), add to allowlist, retry succeeds; MetaHookAuditEvent decoded from `Program data:` log line and rendered (allowlist=pass, sanctions=pass, final=APPROVE) with destination ATA balance verified.
+  - Idempotent provision flow: re-provisions skip already-existing PDAs / mint / ATAs.
+  - Per-wallet localStorage state so users can refresh mid-demo without losing their mint or ephemeral destination keypair.
 
 ## Test Results (2026-05-08, local validator)
 
