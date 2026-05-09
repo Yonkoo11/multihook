@@ -1,0 +1,4 @@
+node_modules
+dist
+.dev-key.json
+public/.dev-key.json

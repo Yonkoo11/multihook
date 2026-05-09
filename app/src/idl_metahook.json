@@ -1,0 +1,250 @@
+{
+  "address": "4o6hRdZFqeM1YbvXQhjsmMgrNuoZSmgqMkpmZELBLh9d",
+  "metadata": {
+    "name": "metahook",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Meta transfer-hook for Token-2022: composes multiple child policy programs"
+  },
+  "instructions": [
+    {
+      "name": "initialize_extra_account_meta_list",
+      "docs": [
+        "Per-mint setup: build the ExtraAccountMetaList PDA so Token-2022 knows",
+        "to forward the reentrancy guard, both child policy program IDs, and",
+        "both child policy PDAs to the hook on every transfer."
+      ],
+      "discriminator": [
+        92,
+        197,
+        174,
+        197,
+        41,
+        124,
+        19,
+        3
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "extra_account_meta_list",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  116,
+                  114,
+                  97,
+                  45,
+                  97,
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "allowlist_authority"
+        },
+        {
+          "name": "sanctions_authority"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_reentrancy_guard",
+      "docs": [
+        "One-time global setup: create the reentrancy-guard PDA."
+      ],
+      "discriminator": [
+        122,
+        115,
+        224,
+        96,
+        48,
+        221,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "reentrancy_guard",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  101,
+                  110,
+                  116,
+                  114,
+                  97,
+                  110,
+                  99,
+                  121,
+                  45,
+                  103,
+                  117,
+                  97,
+                  114,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ReentrancyGuard",
+      "discriminator": [
+        207,
+        227,
+        141,
+        11,
+        194,
+        21,
+        193,
+        32
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "MetaHookAuditEvent",
+      "discriminator": [
+        212,
+        7,
+        92,
+        54,
+        249,
+        97,
+        146,
+        65
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "TooFewAccounts",
+      "msg": "Transfer hook called with too few accounts"
+    },
+    {
+      "code": 6001,
+      "name": "ReentrancyDetected",
+      "msg": "Reentrancy detected: hook re-entered while in flight"
+    },
+    {
+      "code": 6002,
+      "name": "ReentrancyGuardUninitialized",
+      "msg": "Reentrancy guard PDA not initialized — call initialize_reentrancy_guard first"
+    },
+    {
+      "code": 6003,
+      "name": "WrongChildProgram",
+      "msg": "Child policy program key did not match the configured V1 program ID"
+    },
+    {
+      "code": 6004,
+      "name": "PolicyRejected",
+      "msg": "Transfer rejected: at least one child policy returned a failure"
+    }
+  ],
+  "types": [
+    {
+      "name": "MetaHookAuditEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "source",
+            "type": "pubkey"
+          },
+          {
+            "name": "destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "allowlist_pass",
+            "type": "bool"
+          },
+          {
+            "name": "sanctions_pass",
+            "type": "bool"
+          },
+          {
+            "name": "final_decision",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReentrancyGuard",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "in_progress",
+            "type": "bool"
+          }
+        ]
+      }
+    }
+  ]
+}

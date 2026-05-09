@@ -8,3 +8,9 @@ test-ledger
 
 # Don't commit deploy keypairs (or do, depending on your devnet vs prod setup; for now keep out)
 target/deploy/*-keypair.json
+
+# App build artifacts (vite dev cache); production output goes to /docs which IS committed for GH Pages
+app/dist
+app/.dev-key.json
+app/public/.dev-key.json
+app/tsconfig.tsbuildinfo

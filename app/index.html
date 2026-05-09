@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-Hook · Token-2022 Compliance Composability</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🪝</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="ambient"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">⛓</span>
+        <span class="brand-name">multi-hook</span>
+        <span class="brand-tag">demo · devnet</span>
+      </div>
+      <div class="wallet" id="walletStatus">
+        <button id="connectBtn" class="btn btn-primary">Connect Phantom</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>
+          Compose <em>any</em> compliance policies onto a single Token-2022 mint.
+        </h1>
+        <p class="lede">
+          One transfer hook. <strong>N</strong> child policies. Reentrancy-safe.
+          Audit-logged. Phase 1 demo: allowlist + OFAC sanctions, AND-aggregated.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card step" data-step="1">
+          <div class="step-head">
+            <span class="step-num">1</span>
+            <h2>Provision your Token-2022 mint</h2>
+          </div>
+          <p>
+            One click bootstraps everything: your allowlist PDA, your OFAC PDA
+            (seeded with a stub sanctioned wallet), a fresh Token-2022 mint
+            wired to the MetaHook program, and 1 000 tokens minted to your
+            wallet.
+          </p>
+          <button id="provisionBtn" class="btn btn-primary" disabled>
+            Provision demo state
+          </button>
+          <div id="provisionLog" class="logbox"></div>
+        </article>
+
+        <article class="card step" data-step="2">
+          <div class="step-head">
+            <span class="step-num">2</span>
+            <h2>Try a transfer to a non-allowlisted wallet</h2>
+          </div>
+          <p>
+            We generated a fresh destination wallet for the demo. It's not on
+            your allowlist yet — the MetaHook should reject the transfer with
+            <code>policy.allowlist.fail</code>.
+          </p>
+          <button id="transferFailBtn" class="btn" disabled>
+            Send 100 tokens (expect revert)
+          </button>
+          <div id="transferFailLog" class="logbox"></div>
+        </article>
+
+        <article class="card step" data-step="3">
+          <div class="step-head">
+            <span class="step-num">3</span>
+            <h2>Add the destination to your allowlist</h2>
+          </div>
+          <p>
+            Single CPI call into <code>policy_allowlist::add_allowed</code>. The
+            MetaHook program code stays untouched — only the policy state moves.
+          </p>
+          <button id="addAllowBtn" class="btn" disabled>
+            Add destination to allowlist
+          </button>
+          <div id="addAllowLog" class="logbox"></div>
+        </article>
+
+        <article class="card step" data-step="4">
+          <div class="step-head">
+            <span class="step-num">4</span>
+            <h2>Retry the transfer — should succeed + emit audit event</h2>
+          </div>
+          <p>
+            Same instruction as step 2. This time the MetaHook calls into both
+            policies, both pass, and a <code>MetaHookAuditEvent</code> is emitted
+            with the per-policy verdicts.
+          </p>
+          <button id="transferOkBtn" class="btn btn-primary" disabled>
+            Retry 100 tokens (expect success)
+          </button>
+          <div id="transferOkLog" class="logbox"></div>
+          <div id="auditEventBox" class="audit-box hidden">
+            <h3>MetaHookAuditEvent</h3>
+            <table id="auditEventTable"></table>
+          </div>
+        </article>
+      </section>
+
+      <section class="ids">
+        <h3>On-chain references</h3>
+        <table>
+          <tbody>
+            <tr><td>MetaHook program</td><td><a id="metahookLink" target="_blank" rel="noopener"></a></td></tr>
+            <tr><td>policy_allowlist program</td><td><a id="allowlistLink" target="_blank" rel="noopener"></a></td></tr>
+            <tr><td>policy_sanctions_ofac program</td><td><a id="sanctionsLink" target="_blank" rel="noopener"></a></td></tr>
+            <tr><td>Your mint</td><td><a id="mintLink" target="_blank" rel="noopener">— provision first —</a></td></tr>
+            <tr><td>Demo destination wallet</td><td><a id="destLink" target="_blank" rel="noopener">— provision first —</a></td></tr>
+          </tbody>
+        </table>
+        <button id="resetBtn" class="btn btn-ghost">Reset demo state (this wallet)</button>
+      </section>
+    </main>
+
+    <footer>
+      <span>Anchor v0.32.1 · Token-2022 · Solana devnet</span>
+      <span><a href="https://github.com" target="_blank" rel="noopener" id="repoLink">GitHub</a></span>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
