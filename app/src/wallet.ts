@@ -27,6 +27,22 @@ export class PhantomWallet {
     return await this.provider.signAllTransactions(txs);
   }
 
+  /**
+   * Phantom signMessage. Returns the raw 64-byte ed25519 signature bytes.
+   * The wallet popup shows the message to the user verbatim, so we encode it
+   * as utf8 plain text so the issuer can read what they're attesting to.
+   */
+  async signMessage(message: Uint8Array): Promise<Uint8Array> {
+    if (!this.provider.signMessage) {
+      throw new Error("Wallet does not support signMessage");
+    }
+    const result = await this.provider.signMessage(message, "utf8");
+    if (result?.signature instanceof Uint8Array) return result.signature;
+    if (result instanceof Uint8Array) return result;
+    if (Array.isArray(result?.signature)) return Uint8Array.from(result.signature);
+    throw new Error("Unexpected signMessage response shape");
+  }
+
   // anchor's Wallet interface also requires `payer`, but it's only used by
   // server-side flows. Browser flows never call it; expose a throwing stub.
   get payer(): never {
@@ -42,6 +58,10 @@ export interface PhantomProvider {
   disconnect: () => Promise<void>;
   signTransaction: <T>(tx: T) => Promise<T>;
   signAllTransactions: <T>(txs: T[]) => Promise<T[]>;
+  signMessage?: (
+    message: Uint8Array,
+    encoding?: "utf8" | "hex"
+  ) => Promise<{ signature: Uint8Array; publicKey?: PublicKey } | Uint8Array>;
   on: (event: string, cb: (...args: any[]) => void) => void;
   removeListener?: (event: string, cb: (...args: any[]) => void) => void;
 }

@@ -91,6 +91,23 @@ export async function maybeInstallTestProvider(): Promise<boolean> {
       }
       return txs;
     },
+    /**
+     * Mock signMessage for the dev test provider. Returns a deterministic
+     * 64-byte signature derived from sha-256(secret || message) — NOT a real
+     * ed25519 signature. The puppeteer harness only verifies the receipt UI
+     * renders; cryptographic validity is checked by real Phantom in prod.
+     */
+    signMessage: async (message: Uint8Array, _encoding?: string) => {
+      const combined = new Uint8Array(kp.secretKey.length + message.length);
+      combined.set(kp.secretKey, 0);
+      combined.set(message, kp.secretKey.length);
+      const hash = await crypto.subtle.digest("SHA-256", combined);
+      const a = new Uint8Array(hash);
+      const sig = new Uint8Array(64);
+      sig.set(a, 0);
+      sig.set(a, 32);
+      return { signature: sig, publicKey: kp.publicKey };
+    },
     on: (event: string, cb: (...a: any[]) => void) => {
       (listeners[event] ??= []).push(cb);
     },

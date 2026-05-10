@@ -27,6 +27,8 @@ import {
   AuditEvent,
   provision,
   retryTransferExpectSuccess,
+  signAuditReceipt,
+  SignedReceipt,
   tryTransferExpectFail,
 } from "./demo";
 
@@ -195,7 +197,7 @@ function refreshButtons() {
   ui.transferOkBtn.disabled = false;
 }
 
-function renderAuditEvent(evt: AuditEvent | null) {
+function renderAuditEvent(evt: AuditEvent | null, receipt: SignedReceipt | null = null) {
   if (!evt) {
     ui.auditEventBox.classList.add("hidden");
     return;
@@ -234,6 +236,54 @@ function renderAuditEvent(evt: AuditEvent | null) {
     ui.auditEventTable.appendChild(dt);
     ui.auditEventTable.appendChild(dd);
   }
+
+  renderSignedReceipt(receipt);
+}
+
+function renderSignedReceipt(receipt: SignedReceipt | null) {
+  // Remove any prior signed-receipt block (re-render-safe).
+  const prior = ui.auditEventBox.querySelector(".audit-signed");
+  if (prior) prior.remove();
+  if (!receipt) return;
+
+  const wrap = document.createElement("div");
+  wrap.className = "audit-signed";
+
+  const heading = document.createElement("h3");
+  heading.className = "audit-signed-title";
+  heading.textContent = "issuer-signed receipt";
+  wrap.appendChild(heading);
+
+  const meta = document.createElement("dl");
+  meta.className = "audit-table audit-signed-table";
+  const metaRows: [string, string][] = [
+    ["issuer", shortPk(receipt.issuer)],
+    ["signed at", new Date(receipt.signedAt).toUTCString()],
+    ["signature", `${receipt.signatureBase58.slice(0, 14)}…${receipt.signatureBase58.slice(-10)}`],
+  ];
+  for (const [k, v] of metaRows) {
+    const dt = document.createElement("dt");
+    const dd = document.createElement("dd");
+    dt.textContent = k;
+    dd.textContent = v;
+    meta.appendChild(dt);
+    meta.appendChild(dd);
+  }
+  wrap.appendChild(meta);
+
+  const details = document.createElement("details");
+  details.className = "audit-signed-details";
+  const summary = document.createElement("summary");
+  summary.textContent = "show signed message + signature";
+  details.appendChild(summary);
+
+  const pre = document.createElement("pre");
+  pre.className = "audit-signed-message";
+  pre.textContent = receipt.message + "\n--\nsignature(base58): " + receipt.signatureBase58;
+  details.appendChild(pre);
+  wrap.appendChild(details);
+
+  ui.auditEventBox.appendChild(wrap);
 }
 
 async function connect() {
@@ -381,6 +431,25 @@ async function onTransferOk() {
     saveState(wallet.publicKey, state);
     renderAuditEvent(evt);
     refreshButtons();
+
+    // After the on-chain transfer + audit event lands, ask the issuer to
+    // sign a portable off-chain receipt that binds the audit-event base64,
+    // tx signature, and issuer pubkey. Phantom shows the message verbatim.
+    if (evt && wallet) {
+      log("requesting issuer signature on receipt…", "info");
+      try {
+        const receipt = await signAuditReceipt(wallet, evt);
+        renderAuditEvent(evt, receipt);
+        log("receipt signed by issuer", "ok");
+      } catch (signErr: any) {
+        const msg = signErr?.message ?? String(signErr);
+        if (/reject|denied|user.*cancel/i.test(msg)) {
+          log("issuer declined to sign the receipt (the on-chain audit event still stands)", "warn");
+        } else {
+          log(`receipt signing failed: ${msg}`, "warn");
+        }
+      }
+    }
   } catch (e: any) {
     log(`transfer failed: ${e.message ?? e}`, "bad");
     log("(if you skipped step 3 the allowlist policy will reject)", "dim");

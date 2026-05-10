@@ -87,9 +87,9 @@ That's the entire core action. Phase 1 Gate.
 
 | Sponsor | Depth | Notes |
 |---|---|---|
-| **Phantom** | 4/5 | Connect + signTransaction + signMessage on receipts + mobile deeplink (in flight) |
-| **Helius** | 3/5 | Devnet RPC + `getEnhancedTransactions` for on-chain audit feed |
-| **Squads** | 2/5 | Pattern documented for production policy-authority management |
+| **Phantom** | 3/5 | Connect + bundled signTransaction + signMessage on every successful transfer (issuer-signed off-chain receipt binding the on-chain audit event to the issuer's key) |
+| **Helius** | 3/5 | Devnet RPC for all reads/writes; key referrer-restricted to `yonkoo11.github.io`; footer surfaces active provider |
+| **Squads** | 2/5 | Pattern documented for production policy-authority management (in flight) |
 | **GoldRush (Covalent)** | SKIP | Devnet not supported; would be name-drop only. Honesty over inflated track count. |
 
 Full audit + commitments + acceptance tests in [`ai/sponsor-integration.md`](./ai/sponsor-integration.md).

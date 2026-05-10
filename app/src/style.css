@@ -477,6 +477,60 @@ main { max-width: 1180px; margin: 0 auto; padding: 60px 36px 96px; position: rel
 .audit-table .fail { color: var(--reject); font-weight: 500; }
 .audit-table .fail::before { content: "✗  "; }
 
+/* ===================== ISSUER-SIGNED RECEIPT (Phantom signMessage) ====== */
+.audit-signed {
+  position: relative;
+  margin-top: 28px;
+  padding: 22px 24px;
+  border: 1px dashed rgba(245, 166, 35, 0.34);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(245, 166, 35, 0.04), rgba(245, 166, 35, 0.01));
+  z-index: 1;
+}
+.audit-signed-title {
+  margin: 0 0 14px;
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--stamp);
+  font-weight: 600;
+}
+.audit-signed-table {
+  grid-template-columns: 140px 1fr;
+  row-gap: 8px;
+  font-size: 0.82rem;
+  max-width: 100%;
+}
+.audit-signed-details {
+  margin-top: 14px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+.audit-signed-details summary {
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  padding: 6px 0;
+  user-select: none;
+}
+.audit-signed-details summary:hover { color: var(--stamp); }
+.audit-signed-message {
+  margin: 10px 0 0;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(245, 166, 35, 0.16);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 0.74rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
 /* ============================ LEDGER (refs) =========================== */
 .ledger {
   padding: 28px 32px;

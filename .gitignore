@@ -14,3 +14,9 @@ app/dist
 app/.dev-key.json
 app/public/.dev-key.json
 app/tsconfig.tsbuildinfo
+
+# Local env files (Helius API key, etc.) — NEVER commit
+app/.env
+app/.env.local
+.env
+.env.local

@@ -87,8 +87,11 @@ green even without a key. To activate Helius (target depth 3):
 
 The key MUST be domain-restricted in Helius's dashboard before going public — any client-side key is a billing-attack surface otherwise.
 
+### P1 — landed in this session
+- ✅ **Phantom signMessage on receipts** (Phantom 2/5 → 3/5) — `signAuditReceipt()` builds a canonical UTF-8 message containing the audit-event base64, tx signature, issuer pubkey, and ISO timestamp; Phantom popup shows the message verbatim; the resulting base58 signature renders below the stamped receipt as "issuer-signed receipt" with an expandable "show signed message + signature" details block. Files: `app/src/wallet.ts:32` (signMessage adapter), `app/src/demo.ts:419` (signAuditReceipt + base58 encoder), `app/src/main.ts:onTransferOk` (post-success signing flow), `app/src/main.ts:renderSignedReceipt`, `app/src/style.css:.audit-signed`. Test provider mock in `app/src/testProvider.ts` returns a deterministic SHA-256-derived 64-byte stub so the puppeteer harness still passes.
+- ✅ **Helius RPC live** — `app/.env` populated by user with referrer-restricted devnet key. Production bundle inlines key (verified: `helius-rpc.com` present once in `docs/assets/index-*.js`). Footer shows "Helius RPC".
+
 ### P1 — queued, not yet landed
-- ⏳ **Phantom signMessage on receipts** (Phantom 2/5 → 3/5) — sign the audit-event base64 with the issuer wallet, display "issuer-signed receipt" below the stamped receipt. ~2 hours.
 - ⏳ **Helius getEnhancedTransactions audit feed** (Helius 3/5 → 4/5) — render last 5 transfers on the user's mint with verdicts decoded via Helius parsed-tx endpoint, below the receipt. ~3 hours.
 - ⏳ **3rd reference policy: policy-balance-cap** (Public Goods proof) — fork policy-allowlist, replace `is_allowed` check with per-recipient amount cap per epoch. ~3 hours.
 
@@ -102,8 +105,8 @@ The key MUST be domain-restricted in Helius's dashboard before going public — 
 
 | Sponsor | Target | Actual | Evidence (URL or file:line) | Gap |
 |---|---|---|---|---|
-| Phantom | 4 | 2 | `app/src/wallet.ts` raw `window.solana` | -2: signMessage receipts + SIWS still queued |
-| Helius  | 3 | 3* | `app/src/programs.ts:DEMO_RPC` env-gated | *Conditional: requires user to set VITE_HELIUS_KEY before submission build |
+| Phantom | 4 | 3 | `app/src/wallet.ts:32` signMessage + `app/src/demo.ts:419` signAuditReceipt + `app/src/main.ts` onTransferOk signs after every successful transfer | -1: SIWS session + mobile deeplink still queued |
+| Helius  | 3 | 3 | `app/src/programs.ts:DEMO_RPC` env-gated; `docs/assets/index-*.js` contains `helius-rpc.com` (1 match) confirming key inlined at build | 0 — depth target met |
 | Squads  | 2 | 0 | none | -2: pattern doc not written |
 
 Hard gate: if Phantom or Helius drops below 3, EITHER ship the missing wins by killing a polish task, OR drop the affected track from the submission. Honest depth > inflated track count.

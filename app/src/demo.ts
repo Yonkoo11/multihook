@@ -393,11 +393,83 @@ export async function retryTransferExpectSuccess(
   const logs = tx?.meta?.logMessages ?? [];
   const evt = decodeAuditEvent(logs, programs);
   if (evt) {
+    evt.signature = sig;
     log(`MetaHookAuditEvent decoded — final=${evt.final ? "PASS" : "FAIL"}`, "ok");
   } else {
     log("transfer succeeded but no audit event in logs (rare lag — refresh tx in Solscan)", "warn");
   }
   return evt;
+}
+
+/**
+ * Issuer-signed receipt. After a successful transfer, the dApp asks Phantom
+ * to sign a canonical UTF-8 message containing the audit-event base64, the
+ * tx signature, and the issuing wallet. Phantom's popup shows the message
+ * verbatim so the user can read what they're attesting to before signing.
+ *
+ * The resulting signature binds the on-chain audit event to the issuer's
+ * key off-chain — useful for compliance teams that want a portable receipt
+ * (e.g. attached to a regulator filing) without needing to re-fetch the tx.
+ */
+export interface SignedReceipt {
+  message: string;
+  signatureBase58: string;
+  issuer: string;
+  signedAt: string;
+}
+
+export async function signAuditReceipt(
+  wallet: { publicKey: PublicKey; signMessage: (m: Uint8Array) => Promise<Uint8Array> },
+  evt: AuditEvent
+): Promise<SignedReceipt> {
+  const issuedAt = new Date().toISOString();
+  const lines = [
+    "MetaHookReceipt v1",
+    `mint:${evt.mint}`,
+    `src:${evt.source}`,
+    `dst:${evt.destination}`,
+    `amount:${evt.amount}`,
+    `allowlist:${evt.allowlistPass ? "pass" : "fail"}`,
+    `sanctions:${evt.sanctionsPass ? "pass" : "fail"}`,
+    `final:${evt.final ? "approve" : "reject"}`,
+    `tx:${evt.signature}`,
+    `event_b64:${evt.rawBase64}`,
+    `issuer:${wallet.publicKey.toBase58()}`,
+    `issued_at:${issuedAt}`,
+  ];
+  const message = lines.join("\n");
+  const messageBytes = new TextEncoder().encode(message);
+  const sigBytes = await wallet.signMessage(messageBytes);
+  return {
+    message,
+    signatureBase58: bytesToBase58(sigBytes),
+    issuer: wallet.publicKey.toBase58(),
+    signedAt: issuedAt,
+  };
+}
+
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function bytesToBase58(bytes: Uint8Array): string {
+  if (bytes.length === 0) return "";
+  let zeros = 0;
+  while (zeros < bytes.length && bytes[zeros] === 0) zeros++;
+  const digits: number[] = [];
+  for (let i = zeros; i < bytes.length; i++) {
+    let carry = bytes[i];
+    for (let j = 0; j < digits.length; j++) {
+      const val = digits[j] * 256 + carry;
+      digits[j] = val % 58;
+      carry = (val / 58) | 0;
+    }
+    while (carry > 0) {
+      digits.push(carry % 58);
+      carry = (carry / 58) | 0;
+    }
+  }
+  let out = "";
+  for (let i = 0; i < zeros; i++) out += "1";
+  for (let i = digits.length - 1; i >= 0; i--) out += BASE58_ALPHABET[digits[i]];
+  return out;
 }
 
 export interface AuditEvent {
