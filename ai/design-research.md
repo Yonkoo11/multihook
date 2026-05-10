@@ -1,102 +1,101 @@
-# Design Research Brief — Multi-Hook
+# Design Research Brief v2 — Multi-Hook (RWA Compliance Infra)
 
-## Product Category
+**Why this is v2:** v1 researched generic dashboards (Linear, Vercel, Stripe, Hyperliquid, Resend) and produced the Customs Pipeline (serif + amber-stamp + bureaucratic ink). The product has since grown from a single demo to a full compliance infrastructure platform (4 deployed programs, multi-RPC chain, audit feed, SIWS session, Umbra composition). The user flagged that the editorial-stamp aesthetic doesn't fit the institutional-infra reality. v2 researches products in our actual category.
 
-Developer/infrastructure tool for RWA (real-world asset) token issuers building on Solana. Sits at the intersection of:
-- **DevDX dashboards** (Linear, Vercel, Resend) — for the audience
-- **Compliance/risk fintech** (Stripe Radar, Sardine, Plaid) — for the trust signal it must project
-- **DeFi-native dashboards** (Hyperliquid, dYdX, Drift) — for Solana fluency
+## Product Category (revised)
 
-Audience: technical founders + compliance engineers at small-to-mid RWA issuers who don't have Anchorage/Fireblocks budget. Hackathon judges (Public Goods + Standout tracks) + Phantom/Helius/Coinbase reps.
+**Composable smart-contract infrastructure for institutional-grade compliance.** The "OpenZeppelin for Token-2022 transfer-hook compliance" positioning is literal — we sit at the intersection of:
+- **Composable primitive libraries** (OpenZeppelin Contracts) — the closest functional analog
+- **Institutional crypto custody/compliance** (Anchorage, Fireblocks) — the trust signal we must project to RWA issuers
+- **Solana-native infra** (Helius, Solscan, validator dashboards) — the audience convention
 
-## Comparables Studied
+Audience: technical founders + compliance engineers at small-to-mid RWA issuers, plus Frontier hackathon judges (Public Goods + Standout) + sponsor reps from Phantom/Helius/QuickNode/RPC Fast/Umbra/Adevar.
 
-### Linear (https://linear.app)
-- **Layout:** sidebar nav, command palette (Cmd+K) is the spine of the UX
-- **Color:** dark-only. Background `#0e0f12` base with subtle radial accent glows. Single accent (Linear violet `#5e6ad2`).
-- **Typography:** Inter Display 400/500/600. 14px body. Tight tracking (-0.02em on headings). All numbers tabular-nums.
-- **Motion:** Emil Kowalski authored. 150-200ms cubic-bezier(0.23, 1, 0.32, 1). Modal opens from scale(0.95). Hover lifts on cards (translateY(-2px) + shadow).
-- **Density:** medium-high. Lots of metadata visible without feeling crammed because of disciplined whitespace + typography hierarchy.
-- **Signature:** keyboard-first, command palette, the "issue" entity has its own visual identity (status icon + ID format).
-- **Steal this:** disciplined typographic hierarchy + the "everything is a status" mental model.
+## Comparables Studied (v2)
 
-### Vercel Dashboard (https://vercel.com/dashboard)
-- **Layout:** team/project switcher in top header, deployment list dominates the home view, geist sans throughout.
-- **Color:** pure dark base `#000` with very subtle radial gradients (sometimes barely visible). White accents + very rare semantic colors (red/green for status only).
-- **Typography:** Geist Sans + Geist Mono. Numbers are mono-tabular. Tracking on labels.
-- **Motion:** snappy. Page transitions instant. Hover states use shadow + border-color shift.
-- **Signature:** the "Add" button lives in the top-right corner of every view. Branding through restraint — almost no decorative elements; the product IS the deployment list.
-- **Steal this:** restraint as a brand signal. The strongest visual is the absence of visual noise.
+### OpenZeppelin (openzeppelin.com + wizard)
+- **Layout:** marketing site is product-led — Contracts as the headline; the wizard is the killer interactive surface
+- **Color:** dark backgrounds + white type + **electric cobalt blue** as the single accent. Cobalt appears on every CTA, every active-state, every primitive icon
+- **Typography:** clean sans-serif (looks like Inter or similar), tight hierarchy, generous whitespace
+- **Shape language:** **stacked component cards** that visualize "building blocks." This is the load-bearing visual metaphor — the Wizard literally lets you compose contracts from primitives in a 3-pane (picker / preview / output) editor
+- **Mood:** "clinical yet approachable — serious about security but not austere"
+- **Steal this:** the **stack/compose metaphor as primary visual**. Plus: cobalt as the single trust accent. Plus: the "real working tool replaces the marketing hero" pattern from the wizard.
 
-### Stripe Dashboard (dashboard.stripe.com)
-- **Layout:** sidebar with grouped nav, content area is wide, key metrics row at top of each entity view.
-- **Color:** light-mode default (Stripe is consciously not dark-by-default). Purple-to-blue gradient as a brand signature on marketing pages but understated inside the product.
-- **Typography:** Sohne Sans + Sohne Mono. Numerical precision. Tabular-nums everywhere money appears.
-- **Motion:** measured. Modals slide up from bottom with deliberate easing (~250ms).
-- **Signature:** transaction rows. Every entity has the same "row with status badge + amount + actor + timestamp" pattern. Predictable.
-- **Steal this:** the transaction-row pattern is perfect for our audit log. Status + actor + amount + verdict + timestamp.
+### Anchorage Digital (anchorage.com)
+- **Layout:** marketing site, but the visual treatment is operational: stylized graph visualization in the hero, regulatory badges (federal charter, MAS license, BitLicense) as proof
+- **Color:** **dark + white + minimal accents.** Avoids vibrant gradients common in crypto. "Institutional gravitas" through restraint
+- **Typography:** clean modernist sans-serif. Heavier weights for headings. **Generous whitespace as a status signal** — rich brands can afford to leave space empty
+- **Mood:** "institutional-modernist confidence — boring by design, paradoxically reassuring." Every visual choice says "we are serious infrastructure."
+- **Signature:** shield iconography + client logos (BlackRock, Goldman, Visa) + regulatory badges as the trust-stack
+- **Steal this:** the **restraint as brand signal**. Don't crowd the hero. Show evidence (audit event, on-chain program IDs, CPI depth measurement) instead of marketing copy.
 
-### Hyperliquid (app.hyperliquid.xyz)
-- **Layout:** trading-terminal layout. Order book + chart + order form. Information dense.
-- **Color:** dark-only. Tradingview-style green/red for direction. Single brand accent.
-- **Typography:** mono everywhere price/size appears. Updates flash (numbers briefly highlight when they change).
-- **Motion:** cells flash on update. No decorative motion. Speed is the brand.
-- **Signature:** live order book streaming — the page is alive even when you're not interacting.
-- **Steal this:** the "live data" liveness pattern. We can show a streaming audit-log feed that pulses when new events arrive.
+### Fireblocks (fireblocks.com)
+- **Layout:** minimalist enterprise fintech. Headline + use cases + customer logos as authority
+- **Color:** white logo on dark. Functional rather than decorative.
+- **Mood:** "confidence through restraint — outcome-focused." Doesn't lead with "$7T+" in the hero — leads with specific case studies ("Bridge cut bulk settlement times from 12+ hours to under 90 minutes").
+- **Signature:** customer logo carousel + outcome callouts tied to real results
+- **Steal this:** the **"specific evidence beats abstract claims"** pattern — show the audit event, the CU measurement, the program ID, not the badge.
 
-### Resend (resend.com/dashboard)
-- **Layout:** single-column with strong hero. Recent emails as the dominant element. Generous whitespace.
-- **Color:** dark-only. White background option but dark is default. Accent: a single warm blue.
-- **Typography:** Inter. Headings tight. Lots of text-foreground/text-muted-foreground hierarchy.
-- **Motion:** subtle. The "Send" button has a gentle hover state — nothing more.
-- **Signature:** the email-row pattern (subject + status + timestamp + recipient avatar) is the entire UX.
-- **Steal this:** the dev-tool warmth — Resend feels human despite being technical. Worth adopting that warmth instead of a sterile compliance look.
+### Solscan + Helius (Solana-native data infra)
+- Both blocked by Cloudflare bot-check during this session, but priors hold:
+- **Solscan:** dark mode, pink-purple gradient logo, dense tx list with status pills (green pass / red fail), monospace addresses truncated `Az...3pq`, mono everywhere data appears
+- **Helius:** dark mode, electric-blue accent, geometric line illustrations as backgrounds, dev-tool authority through restraint (similar to Vercel)
+- **Steal this:** **mono with truncation as the address pattern.** Status pills as compact identity markers. Dense rows for streaming data.
+
+### Hyperliquid (held over from v1)
+- Live order book — page is alive even when you're not interacting. Cells flash on update. Mono everywhere price/size appears.
+- **Steal this:** the **live-pulse pattern** for the audit feed. Each new audit event fades in with a brief cobalt flash.
 
 ## Common Patterns (table stakes — all proposals must include)
 
-- **Dark-only background** with at least one visible radial accent glow behind the focal element
-- **Sidebar OR top nav** with workspace/wallet identity in a fixed position
-- **Tabular-nums on all on-chain quantities** (amounts, addresses, signatures, timestamps)
-- **Status as a first-class visual primitive** (color + icon + label triad)
-- **Code/transaction signatures rendered in mono** with truncation pattern (first4…last4)
-- **Ambient depth** — at minimum, accent glow behind primary CTA + layered background gradients ≥0.08 opacity
+- **Dark base** with at least one cobalt accent glow behind the focal interaction
+- **Sans-serif (Geist or Inter)** — institutional-infra convention; serif feels boutique vs platform
+- **Mono with first4…last4 truncation** for every pubkey, signature, base64 preview
+- **Single accent + a single semantic color** (cobalt for compose-state + amber ONLY for approval verdicts; never both as decoration)
+- **Live element** — at minimum the audit feed pulses as new events land
+- **Layered backgrounds** — never a single flat dark color (gradients ≥0.08 opacity per design-lessons Rule 13)
 
 ## Differentiation Opportunities (where we stand out)
 
-- **Pipeline metaphor.** No comparable shows a literal "transaction passes through N policies and gets stamped at each one" visualization. This is the product story made visual. Hyperliquid is closest with its order-flow representation.
-- **Audit event as hero.** The MetaHookAuditEvent is the most novel artifact our system produces — most compliance tools hide their decisions in logs. We surface them as the headline output.
-- **Two-tone accent encoding.** Use one accent for "approved/passed" (warm, e.g. amber) and one for "policy" (cool, e.g. cyan). The metaphor is bureaucratic stamp ink — the warm color lives only in approved verdicts.
-- **Live policy verdicts.** Show the verdicts streaming in as the transaction progresses — like the Hyperliquid order book but for compliance.
+- **The compose stack as the hero.** OpenZeppelin's wizard works because it shows the composition act. None of Anchorage/Fireblocks/Solscan visualize composition — they show monolithic dashboards. We can own this.
+- **Live policy verdicts streaming** — Hyperliquid's order-book pulse pattern applied to compliance verdicts. No competitor does this.
+- **Audit event as hero output** — most compliance tools hide their decisions in logs. Surface them as the headline output, decoded from on-chain bytes in real time.
+- **Live integration metric strip** — "4 programs deployed · 33,346 CU per transfer · CPI depth 3/4 · 1 layer headroom." Real numbers vs marketing claims.
 
 ## Design Constraints
 
-- **Audience reads code.** Don't dumb down the technical details. Show program IDs, discriminators, raw base64 — but treat them as first-class UI elements with monospace + truncation, not error-style text.
-- **Phantom-first.** The connect button + wallet identity must follow Phantom's visual conventions (purple "Connect" CTA looks at home).
-- **Hackathon judging in 5 minutes.** A judge lands on the page, scrolls once, must understand: what it is, what it does, why it matters. Hero must do that work.
-- **Demo flow is the product surface.** The 4 sequential steps ARE the product. Don't bury them under marketing.
+- **Audience reads code.** Don't dumb down. Show program IDs, discriminators, base64 — but treat them as first-class UI with mono + truncation, not error styling.
+- **Phantom-first.** The connect button + wallet identity follow Phantom's visual conventions.
+- **Hackathon judging in 5 minutes.** A judge lands, scrolls once, must understand: what it is, what it does, why it matters. The hero must do that work.
+- **Demo flow IS the product surface.** The 5 sequential stations ARE the product. Don't bury them under marketing.
+- **Now serving 7+ sponsor integrations.** Phantom (signMessage, SIWS), Helius (RPC + audit feed), QuickNode + RPC Fast (multi-RPC), SNS (3rd policy), Umbra (privacy compose), Squads (governance doc), Adevar (audit subject). Design must scale to surface all of these.
 
-## Anti-patterns (avoid)
+## Anti-patterns (kill on sight)
 
-- **Generic "feature card grid" of 3 boxes** describing the protocol. Stripe/Vercel/Linear don't do this. The PRODUCT is the demo.
-- **Self-certifying badges** ("Reentrancy-safe", "Audited" — even though true). Show the evidence (audit event, CPI depth measurement), not the badge.
-- **Crypto-purple gradient slop.** No purple-to-pink hero gradient. No "metaverse" aesthetic.
-- **Identical card treatment** for every step. Each step in the demo flow has different content density and different emotional weight (step 2 = expectation of failure, step 4 = success + audit event reveal). Their visual treatment must differ.
-- **A single flat dark background.** Linear/Vercel/Resend all have layered backgrounds with visible tonal variation. Required.
+- **Generic feature-card grid of 3 boxes** — "Secure", "Composable", "Open-source" — kill on sight
+- **Self-certifying badges.** Show evidence (audit event, CPI measurement), not the claim
+- **Crypto-purple gradient slop** — no purple-to-pink hero; institutional infra doesn't do that
+- **Identical card treatment for every section** — dead-page tell
+- **A single flat dark background** — also dead-page tell
+- **Editorial-stamp serif treatment** — what v1 had; doesn't fit institutional infra category
+- **The "OpenZeppelin for X" tagline as the hero** — too generic; the visual must DO the comparison, not write it
 
 ## Stolen Elements (adopt and adapt)
 
-- From **Linear**: the typographic hierarchy + sidebar with workspace identity at top; the "command palette" idea repurposed as a "policy palette" for V2 (showing what policies are available to compose).
-- From **Stripe Dashboard**: the transaction-row pattern for the audit log feed (status badge + actor + amount + timestamp + verdict).
-- From **Hyperliquid**: the live-data pulse — verdicts flash in as the transaction passes through each policy.
-- From **Vercel**: restraint. The hero is the demo, not a marketing page.
-- From **Resend**: warmth in copy. The product helps issuers AVOID compliance pain — not a sterile gatekeeper.
+- From **OpenZeppelin**: the **stack/compose metaphor** as the load-bearing hero visual. Plus cobalt blue as the trust accent.
+- From **Anchorage**: **restraint** in the hero. Don't crowd. Let the on-chain evidence (program IDs, audit event) speak.
+- From **Hyperliquid**: **live pulse** on the audit feed entries — flash cobalt as each new entry lands.
+- From **Solscan**: **mono + truncation + status pills** for every address/signature/verdict.
+- From **Fireblocks**: **specific evidence over abstract claims** — show the CU number, not "fast"; show the audit event, not "auditable."
 
-## Brand Direction
+## Brand Direction (v2)
 
-**Metaphor:** customs clearance / inspection pipeline. Each policy is a customs officer. They stamp the transfer (or reject it). The MetaHook is the conveyor belt. The audit event is the receipt.
+**Metaphor:** **composition stack.** The MetaHook is a translucent container. Each child policy is a block that slots into it. The transfer is a pulse that passes through every block — each one stamps PASS or REJECT — and emerges with a verdict block.
 
-**Mood words:** measured, technical, precise, transparent, evidence-based.
+**Mood words:** measured, technical, evidence-based, **infra-grade**, alive (the page pulses with live data).
 
-**Voice:** dev-tool warmth. Not "OpenZeppelin for Token-2022" (too generic) — closer to "compose your customs checkpoint."
+**Voice:** dev-tool authority. Closer to Vercel than to Anchorage (we're not selling to GS desks, we're shipping infra to RWA founders).
 
-**Color promise:** ink — both bureaucratic-stamp ink (warm amber for approval, deep red for rejection) and ledger-ink (cool blue/cyan for policy state). The dark surface is paper.
+**Color promise:** **cobalt** for compose-state and policy identity (every policy in our stack is cobalt). **Amber** ONLY for approved verdicts — the warm color earns its place by appearing only when compliance has fired and approved. **Reject red** for revert reasons. The dark surface is institutional paper, not literal paper.
+
+**The transplant test:** swap the project name, would this design work for any other product? **NO.** The compose-stack hero is specific to "N policies slot into a meta-orchestrator" — it would not make sense for a generic dashboard, an explorer, or a wallet.

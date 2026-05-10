@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MetaHook · Token-2022 Compliance Composability</title>
-    <meta name="description" content="One transfer hook. N child policies. Each transfer passes through your allowlist + sanctions check + any policy you bolt on, then receives an on-chain audit receipt." />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='12' y='15' width='75' height='70' rx='6' fill='none' stroke='%23f5a623' stroke-width='10' transform='rotate(-6 50 50)'/><text x='50' y='62' text-anchor='middle' font-family='serif' font-size='42' font-weight='600' fill='%23f5a623' transform='rotate(-6 50 50)'>M</text></svg>" />
+    <title>MetaHook · Composable Token-2022 Compliance</title>
+    <meta name="description" content="OpenZeppelin for Token-2022 transfer-hook compliance. One meta-hook, N composable policy programs, one signed audit receipt per transfer." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='14' fill='%230e1119' stroke='%233b66ff' stroke-width='6'/><text x='50' y='65' text-anchor='middle' font-family='ui-monospace,Menlo,monospace' font-size='52' font-weight='600' fill='%233b66ff'>M</text></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -29,68 +29,133 @@
       <section class="hero">
         <div class="hero-copy">
           <h1>
-            Compose <em>customs clearance</em> for any Token-2022 mint.
+            Compose <em>compliance</em> for any Token-2022 mint.
           </h1>
           <p class="lede">
-            One transfer hook. <strong>N</strong> child policies. Every transfer passes
-            through your allowlist, sanctions check, and any policy you bolt on — then
-            receives an on-chain receipt with the verdicts.
+            One meta-hook. <strong>N</strong> composable child policy programs.
+            Every transfer passes through your allowlist, sanctions check, SNS-domain
+            check, and any policy you bolt on — then receives an on-chain audit
+            receipt with the per-policy verdicts.
           </p>
           <div class="hero-stats">
             <div class="hero-stat">
-              <span class="label">CPI depth</span>
-              <span class="value">3 / 4</span>
+              <span class="label">Programs deployed</span>
+              <span class="value">4</span>
             </div>
             <div class="hero-stat">
               <span class="label">CU per transfer</span>
               <span class="value">33,346</span>
             </div>
             <div class="hero-stat">
-              <span class="label">Reentrancy</span>
-              <span class="value">guarded</span>
+              <span class="label">CPI depth</span>
+              <span class="value">3 / 4</span>
             </div>
           </div>
         </div>
 
-        <div class="pipeline" aria-label="Animated diagram of a transfer passing through allowlist and sanctions policies">
-          <svg class="pipeline-svg" viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg">
+        <div class="pipeline" aria-label="Animated diagram of the MetaHook composition stack: three policy blocks slot into the meta-hook container, then a transfer pulse passes through each block and emerges with verdict stamps">
+          <svg class="pipeline-svg" viewBox="0 0 640 280" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <linearGradient id="belt" x1="0" x2="1">
-                <stop offset="0" stop-color="#1a160e" />
-                <stop offset="0.5" stop-color="#2a2316" />
-                <stop offset="1" stop-color="#1a160e" />
+              <linearGradient id="container" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="rgba(59, 102, 255, 0.16)" />
+                <stop offset="1" stop-color="rgba(59, 102, 255, 0.04)" />
+              </linearGradient>
+              <linearGradient id="block" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#1a1e2c" />
+                <stop offset="1" stop-color="#131724" />
               </linearGradient>
             </defs>
-            <rect x="20" y="170" width="600" height="14" rx="3" fill="url(#belt)" />
-            <line x1="20" y1="184" x2="620" y2="184" stroke="rgba(245,166,35,0.18)" stroke-width="0.5" />
-            <g transform="translate(120,30)">
-              <rect x="0" y="40" width="110" height="100" rx="6" fill="#1a160e" stroke="rgba(91,141,239,0.4)" />
-              <text x="55" y="68" text-anchor="middle" font-family="Crimson Pro, serif" font-size="14" fill="#5b8def">ALLOWLIST</text>
-              <text x="55" y="88" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#6e6651">depth 3 · 2,168 CU</text>
-              <g class="stamp-1" opacity="0">
-                <circle cx="55" cy="115" r="14" fill="none" stroke="#f5a623" stroke-width="1.5" />
-                <text x="55" y="119" text-anchor="middle" font-family="Crimson Pro, serif" font-size="8" font-weight="bold" fill="#f5a623">PASS</text>
+            <!-- MetaHook outer container -->
+            <rect x="20" y="20" width="600" height="170" rx="10"
+                  fill="url(#container)" stroke="#3b66ff" stroke-width="1" stroke-dasharray="4 3" opacity="0.85" />
+            <text x="36" y="42" font-family="Geist Mono, monospace" font-size="11"
+                  fill="#5a82ff" letter-spacing="2">METAHOOK · ORCHESTRATOR</text>
+            <text x="604" y="42" text-anchor="end" font-family="Geist Mono, monospace"
+                  font-size="11" fill="#5d6478" letter-spacing="1">depth 2</text>
+
+            <!-- Policy block 1: ALLOWLIST -->
+            <g class="stack-block-1" transform="translate(60, 70)">
+              <rect width="150" height="100" rx="8" fill="url(#block)" stroke="#3b66ff" stroke-width="1.5"/>
+              <text x="14" y="22" font-family="Geist Mono, monospace" font-size="10"
+                    fill="#5a82ff" letter-spacing="1.5">policy_allowlist</text>
+              <text x="14" y="44" font-family="Geist, sans-serif" font-size="14"
+                    font-weight="600" fill="#e8eaef">Allowlist</text>
+              <text x="14" y="62" font-family="Geist Mono, monospace" font-size="9"
+                    fill="#9aa1b3">depth 3 · 2,168 CU</text>
+              <g class="stamp-1">
+                <circle cx="120" cy="78" r="16" fill="rgba(245,166,35,0.10)"
+                        stroke="#f5a623" stroke-width="1.5" />
+                <text x="120" y="82" text-anchor="middle"
+                      font-family="Geist Mono, monospace" font-size="8"
+                      font-weight="700" fill="#f5a623">PASS</text>
               </g>
             </g>
-            <g transform="translate(280,30)">
-              <rect x="0" y="40" width="110" height="100" rx="6" fill="#1a160e" stroke="rgba(91,141,239,0.4)" />
-              <text x="55" y="68" text-anchor="middle" font-family="Crimson Pro, serif" font-size="14" fill="#5b8def">SANCTIONS</text>
-              <text x="55" y="88" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#6e6651">depth 3 · 2,114 CU</text>
-              <g class="stamp-2" opacity="0">
-                <circle cx="55" cy="115" r="14" fill="none" stroke="#f5a623" stroke-width="1.5" />
-                <text x="55" y="119" text-anchor="middle" font-family="Crimson Pro, serif" font-size="8" font-weight="bold" fill="#f5a623">PASS</text>
+
+            <!-- Policy block 2: SANCTIONS -->
+            <g class="stack-block-2" transform="translate(245, 70)">
+              <rect width="150" height="100" rx="8" fill="url(#block)" stroke="#3b66ff" stroke-width="1.5"/>
+              <text x="14" y="22" font-family="Geist Mono, monospace" font-size="10"
+                    fill="#5a82ff" letter-spacing="1.5">policy_sanctions</text>
+              <text x="14" y="44" font-family="Geist, sans-serif" font-size="14"
+                    font-weight="600" fill="#e8eaef">OFAC check</text>
+              <text x="14" y="62" font-family="Geist Mono, monospace" font-size="9"
+                    fill="#9aa1b3">depth 3 · 2,114 CU</text>
+              <g class="stamp-2">
+                <circle cx="120" cy="78" r="16" fill="rgba(245,166,35,0.10)"
+                        stroke="#f5a623" stroke-width="1.5" />
+                <text x="120" y="82" text-anchor="middle"
+                      font-family="Geist Mono, monospace" font-size="8"
+                      font-weight="700" fill="#f5a623">PASS</text>
               </g>
             </g>
-            <g class="pulse-token" transform="translate(0,162)">
-              <circle cx="40" cy="20" r="14" fill="#f5a623" opacity="0.95" />
-              <text x="40" y="24" text-anchor="middle" font-family="Crimson Pro, serif" font-weight="700" font-size="10" fill="#2a1a00">100</text>
+
+            <!-- Policy block 3: YOUR POLICY (the composability story) -->
+            <g class="stack-block-3" transform="translate(430, 70)">
+              <rect width="150" height="100" rx="8" fill="url(#block)" stroke="#3b66ff"
+                    stroke-width="1.5" stroke-dasharray="3 2" opacity="0.92"/>
+              <text x="14" y="22" font-family="Geist Mono, monospace" font-size="10"
+                    fill="#5a82ff" letter-spacing="1.5">policy_&lt;your_rule&gt;</text>
+              <text x="14" y="44" font-family="Geist, sans-serif" font-size="14"
+                    font-weight="600" fill="#e8eaef">Your policy</text>
+              <text x="14" y="62" font-family="Geist Mono, monospace" font-size="9"
+                    fill="#9aa1b3">~200 lines of Rust</text>
+              <g class="stamp-3">
+                <circle cx="120" cy="78" r="16" fill="rgba(91, 130, 255, 0.10)"
+                        stroke="#5a82ff" stroke-width="1.5" stroke-dasharray="2 2"/>
+                <text x="120" y="82" text-anchor="middle"
+                      font-family="Geist Mono, monospace" font-size="8"
+                      font-weight="700" fill="#5a82ff">SLOT</text>
+              </g>
             </g>
-            <text x="20" y="220" font-family="JetBrains Mono, monospace" font-size="10" fill="#6e6651">SOURCE</text>
-            <text x="595" y="220" font-family="JetBrains Mono, monospace" font-size="10" fill="#6e6651">DEST</text>
+
+            <!-- Source / Dest labels -->
+            <text x="20" y="240" font-family="Geist Mono, monospace" font-size="10"
+                  fill="#5d6478" letter-spacing="1.5">SOURCE ATA</text>
+            <text x="620" y="240" text-anchor="end" font-family="Geist Mono, monospace"
+                  font-size="10" fill="#5d6478" letter-spacing="1.5">DEST ATA</text>
+
+            <!-- Path indicator (pulse rail under the blocks) -->
+            <line x1="20" y1="262" x2="620" y2="262"
+                  stroke="rgba(59, 102, 255, 0.25)" stroke-width="0.5"
+                  stroke-dasharray="4 4" />
+
+            <!-- Transfer pulse: 100-token chip travels along the rail through each block.
+                 SMIL animateTransform avoids the CSS-vs-SVG-attribute teleport bug. -->
+            <g class="pulse-token">
+              <rect x="-22" y="-12" width="44" height="22" rx="4"
+                    fill="#f5a623" opacity="0.96" />
+              <text x="0" y="3" text-anchor="middle"
+                    font-family="Geist Mono, monospace" font-size="11"
+                    font-weight="700" fill="#1a1300">100</text>
+              <animateTransform attributeName="transform" type="translate"
+                values="42,262; 135,262; 320,262; 505,262; 600,262"
+                keyTimes="0; 0.18; 0.50; 0.82; 1"
+                dur="6s" repeatCount="indefinite" />
+            </g>
           </svg>
           <div class="pipeline-caption">
             <span>Token-2022.transferChecked</span>
-            <span>2-policy AND aggregation</span>
+            <span>N-policy AND aggregation</span>
           </div>
         </div>
       </section>
@@ -98,7 +163,7 @@
       <!-- ============================ STATIONS =============================== -->
       <section class="stations" aria-label="Demo flow">
         <article class="station station-primary" data-step="1">
-          <span class="station-num">Step 01</span>
+          <span class="station-num">01 · Provision</span>
           <h2 class="station-title">Provision your mint</h2>
           <p class="station-desc">
             One signed transaction creates your allowlist PDA, OFAC PDA,
@@ -111,7 +176,7 @@
         </article>
 
         <article class="station" data-step="2">
-          <span class="station-num">Step 02</span>
+          <span class="station-num">02 · Reject</span>
           <h2 class="station-title">Send to a stranger</h2>
           <p class="station-desc">
             Transfer to a wallet that isn't on your allowlist. The hook should
@@ -124,8 +189,8 @@
         </article>
 
         <article class="station" data-step="3">
-          <span class="station-num">Step 03</span>
-          <h2 class="station-title">Stamp them in</h2>
+          <span class="station-num">03 · Authorise</span>
+          <h2 class="station-title">Add to allowlist</h2>
           <p class="station-desc">
             Single CPI to <code>add_allowed</code>. The MetaHook program code
             stays untouched — only the policy state moves.
@@ -137,10 +202,10 @@
         </article>
 
         <article class="station station-success" data-step="4">
-          <span class="station-num">Step 04</span>
-          <h2 class="station-title">Watch the stamps land</h2>
+          <span class="station-num">04 · Approve</span>
+          <h2 class="station-title">Watch the verdict land</h2>
           <p class="station-desc">
-            Same transfer. This time both policies stamp PASS and a
+            Same transfer. Both policies stamp PASS and a
             <code>MetaHookAuditEvent</code> appears in the tx logs.
           </p>
           <button id="transferOkBtn" class="btn btn-primary" disabled>
@@ -150,7 +215,7 @@
         </article>
 
         <article class="station station-optional" data-step="5">
-          <span class="station-num">Step 05 · optional</span>
+          <span class="station-num">05 · Optional</span>
           <h2 class="station-title">Shield via Umbra</h2>
           <p class="station-desc">
             Move 100 tokens out of your public ATA into an Arcium-encrypted
@@ -199,6 +264,7 @@
             <tr><td>MetaHook program</td><td><a id="metahookLink" target="_blank" rel="noopener"></a></td></tr>
             <tr><td>policy_allowlist program</td><td><a id="allowlistLink" target="_blank" rel="noopener"></a></td></tr>
             <tr><td>policy_sanctions_ofac program</td><td><a id="sanctionsLink" target="_blank" rel="noopener"></a></td></tr>
+            <tr><td>policy_sns_allowlist program</td><td><a target="_blank" rel="noopener" href="https://solscan.io/account/4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo?cluster=devnet">4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo</a></td></tr>
             <tr><td>Your mint</td><td><a id="mintLink" target="_blank" rel="noopener">— provision first —</a></td></tr>
             <tr><td>Demo destination wallet</td><td><a id="destLink" target="_blank" rel="noopener">— provision first —</a></td></tr>
           </tbody>
