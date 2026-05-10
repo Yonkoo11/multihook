@@ -9,11 +9,13 @@ skip-lint = false
 metahook = "4o6hRdZFqeM1YbvXQhjsmMgrNuoZSmgqMkpmZELBLh9d"
 policy_allowlist = "GJHxobVdfywhTidD9u4EoYPGa9kBQVzEcZ7kDhVZehyn"
 policy_sanctions_ofac = "5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt"
+policy_sns_allowlist = "4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo"
 
 [programs.devnet]
 metahook = "4o6hRdZFqeM1YbvXQhjsmMgrNuoZSmgqMkpmZELBLh9d"
 policy_allowlist = "GJHxobVdfywhTidD9u4EoYPGa9kBQVzEcZ7kDhVZehyn"
 policy_sanctions_ofac = "5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt"
+policy_sns_allowlist = "4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo"
 
 [registry]
 url = "https://api.apr.dev"

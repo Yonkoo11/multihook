@@ -66,10 +66,11 @@ That's the entire core action. Phase 1 Gate.
 
 ## What's built (Phase 1 — submitted)
 
-- **3 Anchor programs deployed to devnet:**
+- **4 Anchor programs deployed to devnet:**
   - `metahook` `4o6hRdZFqeM1YbvXQhjsmMgrNuoZSmgqMkpmZELBLh9d` — fallback dispatcher + CPI orchestration + audit event
   - `policy_allowlist` `GJHxobVdfywhTidD9u4EoYPGa9kBQVzEcZ7kDhVZehyn` — set-membership check on destination owner
   - `policy_sanctions_ofac` `5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt` — inverted set-membership (OFAC-style stub list)
+  - `policy_sns_allowlist` `4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo` — third reference policy: gates on whether the recipient owns an authorised `.sol` domain via Solana Name Service (Bonfida). Worked example of the "compose with an external program" pattern in [POLICY_INTERFACE.md](./POLICY_INTERFACE.md)
 - **Reentrancy guard** at `9kfFCZTqLtCRnRwQ4EHWXrZzFSw5Ky3Q68B6BgbA8W5r` — byte at offset 8 flips 0→1→0 across `execute()`; PDA included as writable in `ExtraAccountMetaList` so Solana's account-write exclusivity prevents recursive entry on the same tx.
 - **Anchor v0.32.1** workspace; `anchor-spl::token_2022_extensions`; `spl-transfer-hook-interface` 0.10; `spl-tlv-account-resolution` 0.10
 - **Bundled provision** — all 7-10 setup instructions land in a single signTransaction call. Bypasses Phantom's drainer-pattern detector (rapid-fire multi-tx-after-trust-grant flagged the dApp as malicious in the original 4-tx flow — verified via puppeteer + Phantom CRX harness in `scripts/phantom-e2e.mjs`).
@@ -91,6 +92,9 @@ That's the entire core action. Phase 1 Gate.
 | **Helius** | 3/5 | Devnet RPC for all reads/writes; key referrer-restricted to `yonkoo11.github.io`; footer surfaces active provider |
 | **Squads** | 2/5 | Pattern documented for production policy-authority management (in flight) |
 | **GoldRush (Covalent)** | SKIP | Devnet not supported; would be name-drop only. Honesty over inflated track count. |
+| **SNS (Bonfida)** | 3/5 | Third reference policy `policy-sns-allowlist` deployed to devnet — gates Token-2022 transfers on `.sol` domain ownership via direct SNS NameRecord reads. Sidetrack submission. |
+| **Adevar Labs** | n/a | Submission to the $50K security audit credits sidetrack — we are the audit subject, not the integrator. Three production-ready Anchor programs + reentrancy guard + 7/7 integration tests + CPI-depth analysis. |
+| **Dune Analytics** | 3/5 | Public Dune dashboard decoding `MetaHookAuditEvent` from program logs across all MetaHook deployments. Sidetrack submission. |
 
 Full audit + commitments + acceptance tests in [`ai/sponsor-integration.md`](./ai/sponsor-integration.md).
 

@@ -142,17 +142,22 @@ constants. Phase 2 is a fast follow.
 
 ## Reference policy implementations
 
-Three child policies live in this repo as worked examples:
+Three child policies live in this repo as worked examples — two wired into
+the live demo metahook, plus a third that demonstrates the compose-with-an-
+external-program pattern (SNS / Bonfida lookup):
 
-| Path | Program ID (devnet) | What it does |
-|------|---------------------|--------------|
-| `programs/policy-allowlist/` | `GJHxobVdfywhTidD9u4EoYPGa9kBQVzEcZ7kDhVZehyn` | Approve only if destination owner is in allowlist set |
-| `programs/policy-sanctions-ofac/` | `5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt` | Reject if destination owner is in sanctioned set (inverted allowlist) |
-| `programs/policy-balance-cap/` (planned) | TBD | Cap per-recipient amount per epoch |
+| Path | Program ID (devnet) | What it does | External CPI? |
+|------|---------------------|--------------|---|
+| `programs/policy-allowlist/` | `GJHxobVdfywhTidD9u4EoYPGa9kBQVzEcZ7kDhVZehyn` | Approve only if destination owner is in allowlist set | No |
+| `programs/policy-sanctions-ofac/` | `5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt` | Reject if destination owner is in sanctioned set (inverted allowlist) | No |
+| `programs/policy-sns-allowlist/` | `4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo` | Approve only if destination owner controls one of the authorised `.sol` domains. Reads the SNS NameRecord account, checks ownership matches the destination, and verifies the NameRecord is owned by the canonical Bonfida program. | Reads SNS account directly (no CPI) — keeps depth budget intact |
 
 Use `policy-allowlist` as the simplest scaffold to fork. Replace the
-`Allowlist::is_allowed` check with your rule. Total surface area to ship a
-new policy: ~200 lines of Rust.
+`is_allowed` check with your rule. Total surface area to ship a new
+policy: ~200 lines of Rust. `policy-sns-allowlist` shows the slightly
+larger pattern when your rule needs to consult an external account
+(no CPI, just a direct read + an `account.owner == EXPECTED_PROGRAM_ID`
+spoof check).
 
 ---
 
