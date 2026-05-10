@@ -30,6 +30,37 @@ import { destKp, mintKp, DemoState, sanctionedKp } from "./state";
 export type LogFn = (msg: string, kind?: string, link?: string) => void;
 
 /**
+ * HTTP-polling tx confirmation. Avoids the WebSocket subscription path that
+ * hangs on restrictive networks. Polls getSignatureStatuses every 1s up to
+ * lastValidBlockHeight + 30s safety margin.
+ */
+async function pollForConfirmation(
+  conn: import("@solana/web3.js").Connection,
+  signature: string,
+  lastValidBlockHeight: number,
+  pollMs = 1000,
+  hardTimeoutMs = 90_000
+): Promise<void> {
+  const started = Date.now();
+  while (true) {
+    const { value } = await conn.getSignatureStatuses([signature], { searchTransactionHistory: false });
+    const status = value[0];
+    if (status) {
+      if (status.err) throw Object.assign(new Error("transaction failed: " + JSON.stringify(status.err)), { logs: status.err });
+      if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized") return;
+    }
+    const blockHeight = await conn.getBlockHeight("confirmed").catch(() => null);
+    if (blockHeight !== null && blockHeight > lastValidBlockHeight) {
+      throw new Error("transaction expired (lastValidBlockHeight passed)");
+    }
+    if (Date.now() - started > hardTimeoutMs) {
+      throw new Error("confirmation timeout (90s)");
+    }
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+}
+
+/**
  * One-shot send. Phantom signs the wallet's part; if any extra Keypairs are
  * provided (e.g. the mint keypair), we partial-sign with them locally first.
  */
@@ -61,10 +92,10 @@ async function sendTx(
       skipPreflight: false,
       preflightCommitment: "confirmed",
     });
-    await conn.confirmTransaction(
-      { signature: sig, blockhash: latest.blockhash, lastValidBlockHeight: latest.lastValidBlockHeight },
-      "confirmed"
-    );
+    // HTTP polling instead of WebSocket subscription. WS subscriptions hang
+    // in some restricted-network environments (corp proxies, headless Chrome
+    // CORS for wss://). Polling is slightly slower but works everywhere.
+    await pollForConfirmation(conn, sig, latest.lastValidBlockHeight);
     log(`→ confirmed: ${sig.slice(0, 12)}…`, "ok", `https://solscan.io/tx/${sig}?cluster=devnet`);
     return sig;
   } catch (e: any) {
@@ -80,11 +111,16 @@ async function sendTx(
 }
 
 /**
- * Step 1: provision allowlist + ofac PDAs (per-user PDAs), seed an OFAC
- * stub address, then create the Token-2022 mint with TransferHook ext +
- * ExtraAccountMetaList, then ATAs, then mint to source.
+ * Step 1: provision allowlist + ofac PDAs, seed an OFAC stub, create the
+ * Token-2022 mint with TransferHook + ExtraAccountMetaList, create source +
+ * dest ATAs, mint 1000 tokens to source.
  *
- * Idempotent: skips any account that already exists on-chain.
+ * Bundles everything into a single transaction so Phantom's drainer-pattern
+ * detection (multi-tx-after-trust-grant) doesn't flag the dApp as malicious.
+ * Falls back to two transactions only if the bundled tx exceeds Solana's
+ * 1232-byte legacy limit.
+ *
+ * Idempotent: skips any instruction whose target account already exists.
  */
 export async function provision(
   programs: Programs,
@@ -102,179 +138,144 @@ export async function provision(
   log(`mint: ${mint.publicKey.toBase58()}`, "dim");
   log(`demo dest: ${dest.publicKey.toBase58()}`, "dim");
 
-  // --- 1a. Allowlist + OFAC PDAs (skip if already exist) ---------------------
   const allowPda = allowlistPda(me);
   const ofac = ofacPda(me);
+  const extras = extraMetaListPda(mint.publicKey);
+  const sourceAta = getAssociatedTokenAddressSync(mint.publicKey, me, false, TOKEN_2022_PROGRAM_ID);
+  const destAta = getAssociatedTokenAddressSync(mint.publicKey, dest.publicKey, false, TOKEN_2022_PROGRAM_ID);
 
-  const allowInfo = await conn.getAccountInfo(allowPda, "confirmed");
-  const ofacInfo = await conn.getAccountInfo(ofac, "confirmed");
+  // Probe on-chain state in parallel so we can skip what already exists.
+  const [allowInfo, ofacInfo, mintInfo, extrasInfo, sourceAtaInfo, destAtaInfo] = await Promise.all([
+    conn.getAccountInfo(allowPda, "confirmed"),
+    conn.getAccountInfo(ofac, "confirmed"),
+    conn.getAccountInfo(mint.publicKey, "confirmed"),
+    conn.getAccountInfo(extras, "confirmed"),
+    conn.getAccountInfo(sourceAta, "confirmed"),
+    conn.getAccountInfo(destAta, "confirmed"),
+  ]);
 
-  const initIxs: TransactionInstruction[] = [];
+  // Build the single-tx bundle in dependency order.
+  const ixs: TransactionInstruction[] = [];
+
   if (!allowInfo) {
-    log("creating allowlist PDA…", "info");
-    initIxs.push(
+    log("queue: init allowlist PDA", "info");
+    ixs.push(
       await programs.allowlist.methods
         .initialize()
-        .accountsPartial({
-          authority: me,
-          allowlist: allowPda,
-          systemProgram: SystemProgram.programId,
-        })
+        .accountsPartial({ authority: me, allowlist: allowPda, systemProgram: SystemProgram.programId })
         .instruction()
     );
-  } else {
-    log("allowlist PDA already exists", "dim");
-  }
+  } else log("allowlist PDA already exists", "dim");
+
   if (!ofacInfo) {
-    log("creating OFAC PDA…", "info");
-    initIxs.push(
+    log("queue: init OFAC PDA + seed stub", "info");
+    ixs.push(
       await programs.sanctions.methods
         .initialize()
-        .accountsPartial({
-          authority: me,
-          ofacList: ofac,
-          systemProgram: SystemProgram.programId,
-        })
+        .accountsPartial({ authority: me, ofacList: ofac, systemProgram: SystemProgram.programId })
         .instruction()
     );
-    initIxs.push(
+    ixs.push(
       await programs.sanctions.methods
         .addSanctioned(sanctioned.publicKey)
         .accountsPartial({ authority: me, ofacList: ofac })
         .instruction()
     );
-    log(`seeded stub sanctioned wallet ${sanctioned.publicKey.toBase58().slice(0, 12)}…`, "dim");
-  } else {
-    log("OFAC PDA already exists", "dim");
-  }
-  if (initIxs.length) {
-    await sendTx(programs, initIxs, [], log);
-  }
+  } else log("OFAC PDA already exists", "dim");
 
-  // --- 1b. Token-2022 mint with TransferHook extension -----------------------
-  const mintInfo = await conn.getAccountInfo(mint.publicKey, "confirmed");
   if (!mintInfo) {
     const mintLen = getMintLen([ExtensionType.TransferHook]);
     const lamports = await conn.getMinimumBalanceForRentExemption(mintLen);
-    log("creating Token-2022 mint with TransferHook ext…", "info");
-    await sendTx(
-      programs,
-      [
-        SystemProgram.createAccount({
-          fromPubkey: me,
-          newAccountPubkey: mint.publicKey,
-          space: mintLen,
-          lamports,
-          programId: TOKEN_2022_PROGRAM_ID,
-        }),
-        createInitializeTransferHookInstruction(
-          mint.publicKey,
-          me,
-          programs.metahook.programId,
-          TOKEN_2022_PROGRAM_ID
-        ),
-        createInitializeMintInstruction(
-          mint.publicKey,
-          0,
-          me,
-          null,
-          TOKEN_2022_PROGRAM_ID
-        ),
-      ],
-      [mint],
-      log
+    log("queue: create Token-2022 mint + TransferHook + initialize", "info");
+    ixs.push(
+      SystemProgram.createAccount({
+        fromPubkey: me,
+        newAccountPubkey: mint.publicKey,
+        space: mintLen,
+        lamports,
+        programId: TOKEN_2022_PROGRAM_ID,
+      })
     );
-  } else {
-    log("mint already exists", "dim");
-  }
+    ixs.push(
+      createInitializeTransferHookInstruction(
+        mint.publicKey, me, programs.metahook.programId, TOKEN_2022_PROGRAM_ID
+      )
+    );
+    ixs.push(
+      createInitializeMintInstruction(mint.publicKey, 0, me, null, TOKEN_2022_PROGRAM_ID)
+    );
+  } else log("mint already exists", "dim");
 
-  // --- 1c. ExtraAccountMetaList PDA ------------------------------------------
-  const extras = extraMetaListPda(mint.publicKey);
-  const extrasInfo = await conn.getAccountInfo(extras, "confirmed");
   if (!extrasInfo) {
-    log("initializing ExtraAccountMetaList…", "info");
-    await sendTx(
-      programs,
-      [
-        await programs.metahook.methods
-          .initializeExtraAccountMetaList()
-          .accountsPartial({
-            payer: me,
-            extraAccountMetaList: extras,
-            mint: mint.publicKey,
-            allowlistAuthority: me,
-            sanctionsAuthority: me,
-            systemProgram: SystemProgram.programId,
-          })
-          .instruction(),
-      ],
-      [],
-      log
+    log("queue: init ExtraAccountMetaList", "info");
+    ixs.push(
+      await programs.metahook.methods
+        .initializeExtraAccountMetaList()
+        .accountsPartial({
+          payer: me,
+          extraAccountMetaList: extras,
+          mint: mint.publicKey,
+          allowlistAuthority: me,
+          sanctionsAuthority: me,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction()
     );
-  } else {
-    log("ExtraAccountMetaList already exists", "dim");
-  }
+  } else log("ExtraAccountMetaList already exists", "dim");
 
-  // --- 1d. ATAs + initial mint ----------------------------------------------
-  const sourceAta = getAssociatedTokenAddressSync(
-    mint.publicKey,
-    me,
-    false,
-    TOKEN_2022_PROGRAM_ID
-  );
-  const destAta = getAssociatedTokenAddressSync(
-    mint.publicKey,
-    dest.publicKey,
-    false,
-    TOKEN_2022_PROGRAM_ID
-  );
-
-  const ataIxs: TransactionInstruction[] = [];
-  const sourceAtaInfo = await conn.getAccountInfo(sourceAta, "confirmed");
   if (!sourceAtaInfo) {
-    ataIxs.push(
-      createAssociatedTokenAccountInstruction(
-        me, sourceAta, me, mint.publicKey, TOKEN_2022_PROGRAM_ID
-      )
+    log("queue: create source ATA", "info");
+    ixs.push(
+      createAssociatedTokenAccountInstruction(me, sourceAta, me, mint.publicKey, TOKEN_2022_PROGRAM_ID)
     );
   }
-  const destAtaInfo = await conn.getAccountInfo(destAta, "confirmed");
   if (!destAtaInfo) {
-    ataIxs.push(
-      createAssociatedTokenAccountInstruction(
-        me, destAta, dest.publicKey, mint.publicKey, TOKEN_2022_PROGRAM_ID
-      )
+    log("queue: create dest ATA", "info");
+    ixs.push(
+      createAssociatedTokenAccountInstruction(me, destAta, dest.publicKey, mint.publicKey, TOKEN_2022_PROGRAM_ID)
     );
   }
 
-  // mint 1000 tokens to source if balance is currently 0
-  let needsMint = true;
+  let needsMintTo = true;
   if (sourceAtaInfo) {
     try {
       const acct = await getAccount(conn, sourceAta, "confirmed", TOKEN_2022_PROGRAM_ID);
-      needsMint = acct.amount === 0n;
+      needsMintTo = acct.amount === 0n;
     } catch {
-      needsMint = true;
+      needsMintTo = true;
     }
   }
-  if (needsMint) {
-    ataIxs.push(
-      createMintToInstruction(
-        mint.publicKey,
-        sourceAta,
-        me,
-        1000,
-        [],
-        TOKEN_2022_PROGRAM_ID
-      )
+  if (needsMintTo) {
+    log("queue: mint 1000 to source", "info");
+    ixs.push(
+      createMintToInstruction(mint.publicKey, sourceAta, me, 1000, [], TOKEN_2022_PROGRAM_ID)
     );
   }
 
-  if (ataIxs.length) {
-    log(`finalizing ATAs (${ataIxs.length} ix)…`, "info");
-    await sendTx(programs, ataIxs, [], log);
-  } else {
-    log("ATAs + supply already in place", "dim");
+  if (!ixs.length) {
+    log("nothing to do — provision state is already on-chain", "ok");
+    state.provisioned = true;
+    return;
+  }
+
+  // We always need the mint Keypair as an extra signer when SystemProgram.createAccount(mint)
+  // is in the bundle. If we skipped mint creation, no extra signers needed.
+  const extraSigners: Keypair[] = mintInfo ? [] : [mint];
+
+  log(`bundling ${ixs.length} instruction(s) into one signed transaction…`, "info");
+  try {
+    await sendTx(programs, ixs, extraSigners, log);
+  } catch (e: any) {
+    // If we hit the 1232-byte serialized limit, split into 2 txs.
+    if (/Transaction too large|too large/i.test(String(e?.message ?? ""))) {
+      log("bundle exceeded tx-size limit; splitting into two signatures", "warn");
+      // Split: first half = PDAs + mint creation, second half = ExtraMetaList + ATAs + mint_to.
+      const splitIdx = Math.ceil(ixs.length / 2);
+      await sendTx(programs, ixs.slice(0, splitIdx), extraSigners, log);
+      await sendTx(programs, ixs.slice(splitIdx), [], log);
+    } else {
+      throw e;
+    }
   }
 
   state.provisioned = true;
