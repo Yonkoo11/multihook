@@ -10,6 +10,7 @@ import {
   POLICY_ALLOWLIST_ID,
   POLICY_SANCTIONS_ID,
   Programs,
+  RPC_PROVIDER,
   buildPrograms,
 } from "./programs";
 import {
@@ -407,6 +408,16 @@ async function init() {
   // Dev-only: if `?test=1` is present and we're in dev, install a mock
   // provider before any wallet detection runs. No-op in production.
   await maybeInstallTestProvider();
+
+  // Surface the active RPC provider in the footer so judges (and ourselves
+  // during demos) can see which path is in use without opening devtools.
+  const footer = document.getElementById("footerStack");
+  if (footer) {
+    const rpcLabel = RPC_PROVIDER === "helius"
+      ? "Helius RPC"
+      : "public devnet RPC (set VITE_HELIUS_KEY for higher tier)";
+    footer.textContent = `Anchor v0.32.1 · Token-2022 · Solana devnet · ${rpcLabel}`;
+  }
 
   ui.connectBtn.onclick = connect;
   ui.provisionBtn.onclick = onProvision;

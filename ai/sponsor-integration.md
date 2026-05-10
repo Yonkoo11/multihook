@@ -25,6 +25,7 @@ Audited against the Phase 3.5 Depth Scale:
 | **Metaplex** | 0/5 | 0/5 | Token/NFT | Skip — Token-2022 doesn't compose cleanly with mpl-token-metadata. |
 | **Arcium** | 0/5 | 0/5 | FHE / confidential | Skip V1 (per memory.md fatal flaw 4: confidential transfers + transfer hooks incompatible upstream). |
 | **LI.FI / MoonPay / others** | 0/5 | 0/5 | Cross-chain / on-ramp | Skip — tangential. |
+| **GoldRush (Covalent)** | 0/5 | **SKIP** | Side bounty, $5K | Triaged 2026-05-10: 1/4 yes on Phase 3.5f checklist. **Devnet not supported** (their Solana coverage is mainnet-only); Solana support is "balances endpoint exclusively" per docs (not custom Anchor event decoding). Achievable depth = 1/5 (name-drop) which the framework explicitly bans. Skipping the bounty is +EV vs forcing a shallow integration that signals prize-chasing to Public Goods judges. |
 
 ---
 

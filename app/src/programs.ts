@@ -20,11 +20,21 @@ export const POLICY_SANCTIONS_ID = new PublicKey(
   "5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt"
 );
 
-// One stub OFAC entry for the demo (acts like a known sanctioned wallet).
-// We re-derive it as a fresh keypair each session and feed it into the OFAC PDA
-// during provisioning so each user's demo includes a sanctioned-destination
-// scenario should they wish to test step 2 alternatives.
-export const DEMO_RPC = "https://api.devnet.solana.com";
+// RPC endpoint resolution. Helius devnet preferred (subscription-quality,
+// no rate-limit surprises mid-demo); falls back to public devnet so the dApp
+// still works without a key configured. The key is plumbed via Vite env var
+// VITE_HELIUS_KEY at build time so it can be domain-restricted in the Helius
+// dashboard rather than embedded as a long-lived secret.
+//
+// Why this matters: the prior public-devnet RPC was rate-limiting tx
+// simulation hard enough that Phantom's Confirm button couldn't enable in
+// our puppeteer tests. Real users on flaky networks would hit the same.
+const HELIUS_KEY = (import.meta.env?.VITE_HELIUS_KEY as string | undefined) ?? "";
+export const DEMO_RPC = HELIUS_KEY
+  ? `https://devnet.helius-rpc.com/?api-key=${HELIUS_KEY}`
+  : "https://api.devnet.solana.com";
+
+export const RPC_PROVIDER: "helius" | "public" = HELIUS_KEY ? "helius" : "public";
 
 export interface Programs {
   provider: AnchorProvider;
