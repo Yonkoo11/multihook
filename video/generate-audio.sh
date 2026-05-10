@@ -32,14 +32,15 @@ typeset -A CLIPS
 CLIPS=(
   [01-hero]="This is Meta Hook. Open Zeppelin for the new Solana token standard. One hook, three policies, one signed audit receipt per transfer."
   [02-problem]="Token Twenty Twenty Two shipped its transfer hook in early twenty twenty-four. But shipping production compliance with it still means writing a custom hook per mint, or paying Securitize half a million dollars to wrap your fund the way BlackRock did. There is no third option."
-  [03-solution]="Until now. Meta Hook is the missing piece. One meta hook program. N child policy programs. Every transfer passes through every policy in a single C P I chain, and emits one signed audit receipt with the per-policy verdicts."
-  [04-reject]="Watch it run. We provision a token, then send a hundred to a wallet that is not on the allowlist. The hook rejects with a clean error. Policy allow list fail. Right where the spec says it should."
-  [05-approve]="Add the wallet to the allowlist with one C P I call. Same transfer fires again. Both policies stamp PASS, and the audit event lands in the program logs, base sixty-four encoded, decoded right here in your browser."
-  [06-sponsors]="And it composes. Shield the same transfer through Umbra's encrypted accounts, and the meta hook fires before the privacy layer takes over. Compliance at the entry point. Privacy on the way out. Every sponsor integration audited against a public depth scale."
-  [07-close]="Meta Hook. Compose your compliance stack the same way you compose middleware in Express. Try the live demo. The code is on GitHub."
+  [03-connect]="Until now. I connect Phantom on devnet. One click. Click Provision, and a single signed transaction sets up the mint with both policies wired into the transfer hook."
+  [04-reject]="Now I send a hundred to a wallet that is not on the allowlist. Phantom asks me to confirm. The hook rejects. Policy allow list fail."
+  [05-allow]="I add the wallet to the allowlist with one C P I call. The meta hook code never moves."
+  [06-approve]="Same transfer fires again. Both policies stamp PASS, and the audit event lands in the program logs, base sixty-four encoded, decoded right here in the browser. One signed receipt per transfer."
+  [07-compose]="And it composes. Anyone can fork the spec, ship a new policy in two hundred lines of Rust, and slot it into a live mint without touching the meta hook code."
+  [08-close]="Meta Hook. Compose your compliance stack the same way you compose middleware in Express. Try the live demo. The code is on GitHub."
 )
 
-CLIP_ORDER=(01-hero 02-problem 03-solution 04-reject 05-approve 06-sponsors 07-close)
+CLIP_ORDER=(01-hero 02-problem 03-connect 04-reject 05-allow 06-approve 07-compose 08-close)
 
 # Pre-flight quota check
 QUOTA=$(curl -s https://api.elevenlabs.io/v1/user -H "xi-api-key: $ELEVENLABS_API_KEY" \

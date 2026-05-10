@@ -1,10 +1,12 @@
-# MetaHook — Demo Video Script
+# MetaHook — Demo Video Script (v3)
 
-**Target:** 90-100s technical demo (within Colosseum's 2-3 min cap).
-**Framework:** PAS (Problem-Agitation-Solution).
+**Target:** ~90-100s technical demo, real Phantom flow visible end-to-end.
+**Framework:** PAS (Problem-Agitation-Solution) → live walkthrough → close.
 **Judges:** Frontier panel (Public Goods Award primary) + side-track sponsors (Adevar, RPC Fast, SNS, QuickNode, Umbra).
 **ElevenLabs voice:** Brian (`nPczCjzI2devNBz1zQrb`), stability 0.82, similarity 0.65, style 0.03.
-**Hard rule:** every brand or compound word is rewritten phonetically (camelCase defeats TTS). Words below are how the script READS — subtitles can keep the on-screen spelling.
+**Hard rule:** every brand or compound word is rewritten phonetically. Subtitles match the audio verbatim and burn into the frame.
+
+**v3 vs v2:** v3 uses 8 clips (split the demo into 4 distinct action beats — connect+provision, reject, allow, approve+receipt — instead of v2's 2 lumped beats). Each clip's narration matches what the viewer SEES happening on screen at that moment, so the voiceover lands when the action lands. Subtitles burn-in.
 
 ---
 
@@ -53,68 +55,63 @@
 
 ---
 
-## Clip 03 — Solution · 15s
+## Clip 03 — Connect + Provision · 12s
 
-**Frame:** Demo page top — the 5-station strip ("01 PROVISION · 02 REJECT · 03 AUTHORISE · 04 APPROVE · 05 OPTIONAL"), all visible.
-**Why this clip:** Frame the system before showing it run. Emphasize composability.
+**Frame:** Live demo page → Phantom Connect popup appears → wallet pill flips to address → Provision button enables → click Provision → Phantom Confirm Transactions popup → click Confirm → provision log streams "creating allowlist PDA / OFAC PDA / Token-2022 mint with TransferHook ext / ExtraAccountMetaList".
+**Why this clip:** Show the real wallet handshake in the first 30 seconds. Judges need to know this isn't a mockup.
 
-**Voiceover (38 words):**
-> "Until now. Meta Hook is the missing piece. One meta hook program. N child policy programs. Every transfer passes through every policy in a single C P I chain, and emits one signed audit receipt with the per-policy verdicts."
-
-**Slop gate:** PASS — describes the mechanism in concrete terms ("CPI chain", "audit receipt"), not marketing voice.
-**Pronunciation gate:** PASS — "C P I" letters spaced, "Meta Hook" spaced.
+**Voiceover (32 words):**
+> "Until now. I connect Phantom on devnet. One click. Click Provision, and a single signed transaction sets up the mint with both policies wired into the transfer hook."
 
 ---
 
-## Clip 04 — Demo · Reject · 13s
+## Clip 04 — Reject · 11s
 
-**Frame:** Demo page zoomed on Station 02 (REJECT) with simulated `policy.allowlist.fail` rejection badge in the audit feed.
-**Why this clip:** Show the technically interesting path — the policy actually rejecting. This is the "hard part" judges want.
+**Frame:** Click "Send 100 (expect revert)" → Phantom Confirm popup → click Confirm → fail-log streams `policy.allowlist.fail: destination not on allowlist` in red.
+**Why this clip:** Show the technically interesting path — the policy actually rejecting on-chain. Judges want this.
 
-**Voiceover (33 words):**
-> "Watch it run. We provision a token, then send a hundred to a wallet that is not on the allowlist. The hook rejects with a clean error. Policy allow list fail. Right where the spec says it should."
-
-**Slop gate:** PASS — shows the failure path as a feature (clean error, spec compliance), not a bug.
-**Pronunciation gate:** PASS — "policy allow list fail" reads as a clear error code.
+**Voiceover (28 words):**
+> "Now I send a hundred to a wallet that is not on the allowlist. Phantom asks me to confirm. The hook rejects. Policy allow list fail."
 
 ---
 
-## Clip 05 — Demo · Approve + Audit Event · 16s
+## Clip 05 — Allow · 8s
 
-**Frame:** Demo page zoomed on Station 04 (APPROVE) + the rendered audit-receipt detail block (PASS stamp, decoded fields visible).
-**Why this clip:** The "wow" moment. Compliance ran, the policies AND-aggregated, the receipt decoded in-browser. This is the proof.
+**Frame:** Click "Add to allowlist" → Phantom Confirm popup → click Confirm → log streams `added to allowlist · sig …`.
+**Why this clip:** Show the policy authority in action — one CPI to mutate state, the meta-hook code is untouched.
 
-**Voiceover (38 words):**
-> "Add the wallet to the allowlist with one C P I call. Same transfer fires again. Both policies stamp PASS, and the audit event lands in the program logs, base sixty-four encoded, decoded right here in your browser."
-
-**Slop gate:** PASS — all-concrete, no narrating-the-obvious ("as you can see").
-**Pronunciation gate:** PASS — "base sixty-four" instead of "base 64".
+**Voiceover (20 words):**
+> "I add the wallet to the allowlist with one C P I call. The meta hook code never moves."
 
 ---
 
-## Clip 06 — Composability + Sponsor depth · 14s
+## Clip 06 — Approve + Audit Event · 14s
 
-**Frame:** Sponsors page — the depth audit table showing Phantom 4/5, Helius 4/5, Umbra 3/5, Squads 2/5 etc.
-**Why this clip:** The composability story (Umbra) + the public-goods transparency move (audited self-scoring). Both judging criteria.
+**Frame:** Click "Retry (expect approve)" → Phantom Confirm popup → click Confirm → both policies stamp PASS in green → audit-receipt detail block scrolls into view with `final: APPROVED`, `policy_allowlist: PASS`, `policy_sanctions_ofac: PASS`, decoded fields visible.
+**Why this clip:** The wow moment. Same transfer fires, both policies AND-aggregate, the audit event decodes in-browser.
 
-**Voiceover (37 words):**
-> "And it composes. Shield the same transfer through Umbra's encrypted accounts, and the meta hook fires before the privacy layer takes over. Compliance at the entry point. Privacy on the way out. Every sponsor integration audited against a public depth scale."
-
-**Slop gate:** PASS — "compliance fires before privacy" is the load-bearing one-liner. Credible because the depth audit is public.
-**Pronunciation gate:** PASS.
+**Voiceover (35 words):**
+> "Same transfer fires again. Both policies stamp PASS, and the audit event lands in the program logs, base sixty-four encoded, decoded right here in the browser. One signed receipt per transfer."
 
 ---
 
-## Clip 07 — Close · 10s
+## Clip 07 — Composability · 12s
 
-**Frame:** Closing card — large MetaHook logo + tagline "Compose your compliance stack the same way you compose middleware in Express." + URL.
+**Frame:** Navigate to /docs/policies — the public POLICY_INTERFACE spec. Sticky sidebar visible, on-this-page TOC visible (TL;DR, Required instruction, Account context, Returning a verdict, PDA convention).
+**Why this clip:** The composability story is the load-bearing claim. Showing the public spec proves anyone can ship a fourth policy.
+
+**Voiceover (30 words):**
+> "And it composes. Anyone can fork the spec, ship a new policy in two hundred lines of Rust, and slot it into a live mint without touching the meta hook code."
+
+---
+
+## Clip 08 — Close · 8s
+
+**Frame:** Closing card — large MetaHook logo + tagline + URL + repo link.
 **Why this clip:** Single CTA, named product, no thank-yous.
 
 **Voiceover (24 words):**
 > "Meta Hook. Compose your compliance stack the same way you compose middleware in Express. Try the live demo. The code is on GitHub."
-
-**Slop gate:** PASS — names the product, single CTA, no "thanks for watching".
-**Pronunciation gate:** PASS.
 
 ---
 

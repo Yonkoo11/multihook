@@ -28,7 +28,7 @@ import os from "node:os";
 
 const PHANTOM_ID = "bfnaelmomeimhlpmgjnjophhpkkoljpa";
 const PHANTOM_KEY_FILE = process.env.PHANTOM_KEY_FILE ?? "/tmp/phantom-test-key.b58";
-const DEMO_URL = process.env.DEMO_URL ?? "https://yonkoo11.github.io/multihook/";
+const DEMO_URL = process.env.DEMO_URL ?? "https://yonkoo11.github.io/multihook/demo/";
 const PROFILE_DIR = process.env.PROFILE_DIR ?? "/tmp/multihook-phantom-profile";
 const EXT_DIR = process.env.EXT_DIR ?? "/tmp/phantom-crx/unpacked";
 const PHANTOM_PASSWORD = process.env.PHANTOM_PASSWORD ?? "PhantomTest!2026Demo";
