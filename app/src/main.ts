@@ -43,6 +43,7 @@ interface UI {
   transferOkLog: HTMLElement;
   auditEventBox: HTMLElement;
   auditEventTable: HTMLElement;
+  auditReceiptId: HTMLElement;
   metahookLink: HTMLAnchorElement;
   allowlistLink: HTMLAnchorElement;
   sanctionsLink: HTMLAnchorElement;
@@ -65,6 +66,7 @@ const ui: UI = {
   transferOkLog: document.getElementById("transferOkLog")!,
   auditEventBox: document.getElementById("auditEventBox")!,
   auditEventTable: document.getElementById("auditEventTable")!,
+  auditReceiptId: document.getElementById("auditReceiptId")!,
   metahookLink: document.getElementById("metahookLink") as HTMLAnchorElement,
   allowlistLink: document.getElementById("allowlistLink") as HTMLAnchorElement,
   sanctionsLink: document.getElementById("sanctionsLink") as HTMLAnchorElement,
@@ -198,27 +200,38 @@ function renderAuditEvent(evt: AuditEvent | null) {
     return;
   }
   ui.auditEventBox.classList.remove("hidden");
-  const rows: [string, string][] = [
+
+  // Toggle the rotated stamp into APPROVED/DENIED state
+  const stamp = ui.auditEventBox.querySelector(".audit-stamp");
+  if (stamp) stamp.classList.toggle("deny", !evt.final);
+
+  // Receipt ID line: short signature + raw discriminator preview
+  while (ui.auditReceiptId.firstChild)
+    ui.auditReceiptId.removeChild(ui.auditReceiptId.firstChild);
+  ui.auditReceiptId.appendChild(document.createTextNode(
+    `RECEIPT · ${evt.rawBase64.slice(0, 14)}…${evt.rawBase64.slice(-8)}`
+  ));
+
+  // Receipt body — definition list (dt/dd pairs styled as a 2-column grid)
+  const rows: [string, string, string?][] = [
     ["mint", shortPk(evt.mint)],
     ["source", shortPk(evt.source)],
     ["destination", shortPk(evt.destination)],
     ["amount", evt.amount],
-    ["allowlist verdict", evt.allowlistPass ? "✅ pass" : "❌ fail"],
-    ["sanctions verdict", evt.sanctionsPass ? "✅ pass" : "❌ fail"],
-    ["final decision", evt.final ? "✅ APPROVE" : "❌ REJECT"],
-    ["raw (base64)", evt.rawBase64.slice(0, 64) + "…"],
+    ["allowlist verdict", evt.allowlistPass ? "pass" : "fail", evt.allowlistPass ? "pass" : "fail"],
+    ["sanctions verdict", evt.sanctionsPass ? "pass" : "fail", evt.sanctionsPass ? "pass" : "fail"],
+    ["final decision", evt.final ? "APPROVE" : "REJECT", evt.final ? "pass" : "fail"],
   ];
   while (ui.auditEventTable.firstChild)
     ui.auditEventTable.removeChild(ui.auditEventTable.firstChild);
-  for (const [k, v] of rows) {
-    const tr = document.createElement("tr");
-    const td1 = document.createElement("td");
-    const td2 = document.createElement("td");
-    td1.textContent = k;
-    td2.textContent = v;
-    tr.appendChild(td1);
-    tr.appendChild(td2);
-    ui.auditEventTable.appendChild(tr);
+  for (const [k, v, kind] of rows) {
+    const dt = document.createElement("dt");
+    const dd = document.createElement("dd");
+    dt.textContent = k;
+    dd.textContent = v;
+    if (kind) dd.className = kind;
+    ui.auditEventTable.appendChild(dt);
+    ui.auditEventTable.appendChild(dd);
   }
 }
 
@@ -296,6 +309,9 @@ function renderWallet() {
   }
   const pill = document.createElement("span");
   pill.className = "wallet-pill";
+  const dot = document.createElement("span");
+  dot.className = "dot";
+  pill.appendChild(dot);
   pill.appendChild(document.createTextNode("devnet · "));
   const strong = document.createElement("strong");
   strong.textContent = shortPk(wallet.publicKey);

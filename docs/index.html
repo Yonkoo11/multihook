@@ -3,19 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Multi-Hook · Token-2022 Compliance Composability</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🪝</text></svg>" />
-    <script type="module" crossorigin src="./assets/index-DH4CWwex.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DmpAGe7Z.css">
+    <title>MetaHook · Token-2022 Compliance Composability</title>
+    <meta name="description" content="One transfer hook. N child policies. Each transfer passes through your allowlist + sanctions check + any policy you bolt on, then receives an on-chain audit receipt." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='12' y='15' width='75' height='70' rx='6' fill='none' stroke='%23f5a623' stroke-width='10' transform='rotate(-6 50 50)'/><text x='50' y='62' text-anchor='middle' font-family='serif' font-size='42' font-weight='600' fill='%23f5a623' transform='rotate(-6 50 50)'>M</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="./assets/index-CHFfL3rU.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CUW4oL1P.css">
   </head>
   <body>
-    <div id="ambient"></div>
+    <div id="grain" aria-hidden="true"></div>
 
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark">⛓</span>
-        <span class="brand-name">multi-hook</span>
-        <span class="brand-tag">demo · devnet</span>
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-name">MetaHook<small>devnet</small></span>
       </div>
       <div class="wallet" id="walletStatus">
         <button id="connectBtn" class="btn btn-primary">Connect Phantom</button>
@@ -23,89 +26,143 @@
     </header>
 
     <main>
+      <!-- ============================ HERO =================================== -->
       <section class="hero">
-        <h1>
-          Compose <em>any</em> compliance policies onto a single Token-2022 mint.
-        </h1>
-        <p class="lede">
-          One transfer hook. <strong>N</strong> child policies. Reentrancy-safe.
-          Audit-logged. Phase 1 demo: allowlist + OFAC sanctions, AND-aggregated.
-        </p>
+        <div class="hero-copy">
+          <h1>
+            Compose <em>customs clearance</em> for any Token-2022 mint.
+          </h1>
+          <p class="lede">
+            One transfer hook. <strong>N</strong> child policies. Every transfer passes
+            through your allowlist, sanctions check, and any policy you bolt on — then
+            receives an on-chain receipt with the verdicts.
+          </p>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span class="label">CPI depth</span>
+              <span class="value">3 / 4</span>
+            </div>
+            <div class="hero-stat">
+              <span class="label">CU per transfer</span>
+              <span class="value">33,346</span>
+            </div>
+            <div class="hero-stat">
+              <span class="label">Reentrancy</span>
+              <span class="value">guarded</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipeline" aria-label="Animated diagram of a transfer passing through allowlist and sanctions policies">
+          <svg class="pipeline-svg" viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="belt" x1="0" x2="1">
+                <stop offset="0" stop-color="#1a160e" />
+                <stop offset="0.5" stop-color="#2a2316" />
+                <stop offset="1" stop-color="#1a160e" />
+              </linearGradient>
+            </defs>
+            <rect x="20" y="170" width="600" height="14" rx="3" fill="url(#belt)" />
+            <line x1="20" y1="184" x2="620" y2="184" stroke="rgba(245,166,35,0.18)" stroke-width="0.5" />
+            <g transform="translate(120,30)">
+              <rect x="0" y="40" width="110" height="100" rx="6" fill="#1a160e" stroke="rgba(91,141,239,0.4)" />
+              <text x="55" y="68" text-anchor="middle" font-family="Crimson Pro, serif" font-size="14" fill="#5b8def">ALLOWLIST</text>
+              <text x="55" y="88" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#6e6651">depth 3 · 2,168 CU</text>
+              <g class="stamp-1" opacity="0">
+                <circle cx="55" cy="115" r="14" fill="none" stroke="#f5a623" stroke-width="1.5" />
+                <text x="55" y="119" text-anchor="middle" font-family="Crimson Pro, serif" font-size="8" font-weight="bold" fill="#f5a623">PASS</text>
+              </g>
+            </g>
+            <g transform="translate(280,30)">
+              <rect x="0" y="40" width="110" height="100" rx="6" fill="#1a160e" stroke="rgba(91,141,239,0.4)" />
+              <text x="55" y="68" text-anchor="middle" font-family="Crimson Pro, serif" font-size="14" fill="#5b8def">SANCTIONS</text>
+              <text x="55" y="88" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#6e6651">depth 3 · 2,114 CU</text>
+              <g class="stamp-2" opacity="0">
+                <circle cx="55" cy="115" r="14" fill="none" stroke="#f5a623" stroke-width="1.5" />
+                <text x="55" y="119" text-anchor="middle" font-family="Crimson Pro, serif" font-size="8" font-weight="bold" fill="#f5a623">PASS</text>
+              </g>
+            </g>
+            <g class="pulse-token" transform="translate(0,162)">
+              <circle cx="40" cy="20" r="14" fill="#f5a623" opacity="0.95" />
+              <text x="40" y="24" text-anchor="middle" font-family="Crimson Pro, serif" font-weight="700" font-size="10" fill="#2a1a00">100</text>
+            </g>
+            <text x="20" y="220" font-family="JetBrains Mono, monospace" font-size="10" fill="#6e6651">SOURCE</text>
+            <text x="595" y="220" font-family="JetBrains Mono, monospace" font-size="10" fill="#6e6651">DEST</text>
+          </svg>
+          <div class="pipeline-caption">
+            <span>Token-2022.transferChecked</span>
+            <span>2-policy AND aggregation</span>
+          </div>
+        </div>
       </section>
 
-      <section class="grid">
-        <article class="card step" data-step="1">
-          <div class="step-head">
-            <span class="step-num">1</span>
-            <h2>Provision your Token-2022 mint</h2>
-          </div>
-          <p>
-            One click bootstraps everything: your allowlist PDA, your OFAC PDA
-            (seeded with a stub sanctioned wallet), a fresh Token-2022 mint
-            wired to the MetaHook program, and 1 000 tokens minted to your
-            wallet.
+      <!-- ============================ STATIONS =============================== -->
+      <section class="stations" aria-label="Demo flow">
+        <article class="station station-primary" data-step="1">
+          <span class="station-num">Step 01</span>
+          <h2 class="station-title">Provision your mint</h2>
+          <p class="station-desc">
+            One signed transaction creates your allowlist PDA, OFAC PDA,
+            Token-2022 mint with TransferHook ext, and the ExtraAccountMetaList.
           </p>
           <button id="provisionBtn" class="btn btn-primary" disabled>
-            Provision demo state
+            Provision (1 signature)
           </button>
           <div id="provisionLog" class="logbox"></div>
         </article>
 
-        <article class="card step" data-step="2">
-          <div class="step-head">
-            <span class="step-num">2</span>
-            <h2>Try a transfer to a non-allowlisted wallet</h2>
-          </div>
-          <p>
-            We generated a fresh destination wallet for the demo. It's not on
-            your allowlist yet — the MetaHook should reject the transfer with
-            <code>policy.allowlist.fail</code>.
+        <article class="station" data-step="2">
+          <span class="station-num">Step 02</span>
+          <h2 class="station-title">Send to a stranger</h2>
+          <p class="station-desc">
+            Transfer to a wallet that isn't on your allowlist. The hook should
+            reject with <code>policy.allowlist.fail</code>.
           </p>
           <button id="transferFailBtn" class="btn" disabled>
-            Send 100 tokens (expect revert)
+            Send 100 (expect revert)
           </button>
           <div id="transferFailLog" class="logbox"></div>
         </article>
 
-        <article class="card step" data-step="3">
-          <div class="step-head">
-            <span class="step-num">3</span>
-            <h2>Add the destination to your allowlist</h2>
-          </div>
-          <p>
-            Single CPI call into <code>policy_allowlist::add_allowed</code>. The
-            MetaHook program code stays untouched — only the policy state moves.
+        <article class="station" data-step="3">
+          <span class="station-num">Step 03</span>
+          <h2 class="station-title">Stamp them in</h2>
+          <p class="station-desc">
+            Single CPI to <code>add_allowed</code>. The MetaHook program code
+            stays untouched — only the policy state moves.
           </p>
           <button id="addAllowBtn" class="btn" disabled>
-            Add destination to allowlist
+            Add to allowlist
           </button>
           <div id="addAllowLog" class="logbox"></div>
         </article>
 
-        <article class="card step" data-step="4">
-          <div class="step-head">
-            <span class="step-num">4</span>
-            <h2>Retry the transfer — should succeed + emit audit event</h2>
-          </div>
-          <p>
-            Same instruction as step 2. This time the MetaHook calls into both
-            policies, both pass, and a <code>MetaHookAuditEvent</code> is emitted
-            with the per-policy verdicts.
+        <article class="station station-success" data-step="4">
+          <span class="station-num">Step 04</span>
+          <h2 class="station-title">Watch the stamps land</h2>
+          <p class="station-desc">
+            Same transfer. This time both policies stamp PASS and a
+            <code>MetaHookAuditEvent</code> appears in the tx logs.
           </p>
           <button id="transferOkBtn" class="btn btn-primary" disabled>
-            Retry 100 tokens (expect success)
+            Retry (expect approve)
           </button>
           <div id="transferOkLog" class="logbox"></div>
-          <div id="auditEventBox" class="audit-box hidden">
-            <h3>MetaHookAuditEvent</h3>
-            <table id="auditEventTable"></table>
-          </div>
         </article>
       </section>
 
-      <section class="ids">
+      <!-- ========================== AUDIT RECEIPT =========================== -->
+      <section id="auditEventBox" class="audit hidden" aria-live="polite">
+        <div class="audit-stamp" aria-hidden="true"></div>
+        <h2 class="audit-title">MetaHookAuditEvent</h2>
+        <div id="auditReceiptId" class="audit-receipt-id">RECEIPT</div>
+        <dl id="auditEventTable" class="audit-table"></dl>
+      </section>
+
+      <!-- =========================== ON-CHAIN REFERENCES ==================== -->
+      <section class="ledger" aria-label="On-chain references">
         <h3>On-chain references</h3>
-        <table>
+        <table class="ledger-table">
           <tbody>
             <tr><td>MetaHook program</td><td><a id="metahookLink" target="_blank" rel="noopener"></a></td></tr>
             <tr><td>policy_allowlist program</td><td><a id="allowlistLink" target="_blank" rel="noopener"></a></td></tr>

@@ -1,0 +1,367 @@
+<!doctype html>
+<!--
+  PROPOSAL 2 — "POLICY STACK" (DNA-VOID-STACK-GEIST-PULSE-VIOLET)
+  Metaphor: middleware stack. Each policy is a layer. Live event feed dominates.
+  Influences: Vercel restraint, Hyperliquid live data, Linear keyboard-first, Resend warmth.
+  Distinctive choice: ticker-style live verdict feed + container-card stack metaphor.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proposal 2 · Policy Stack</title>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
+  :root {
+    --void: #050608;
+    --void-2: #090b10;
+    --void-3: #0e1118;
+    --void-4: #141821;
+    --line: rgba(255,255,255,0.06);
+    --line-strong: rgba(255,255,255,0.14);
+    --fg: #f4f5f7;
+    --fg-dim: #8b94a3;
+    --fg-faint: #4a5161;
+    --accent: #a78bfa;
+    --accent-deep: #7c3aed;
+    --accent-glow: rgba(167,139,250,0.18);
+    --pass: #34d399;
+    --fail: #f87171;
+    --warn: #fbbf24;
+    --geist: "Geist", -apple-system, ui-sans-serif, system-ui, sans-serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--void);
+    color: var(--fg);
+    font-family: var(--geist);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+  }
+  body {
+    background:
+      radial-gradient(900px 500px at 50% -10%, var(--accent-glow), transparent 60%),
+      radial-gradient(700px 400px at 100% 30%, rgba(124,58,237,0.10), transparent 60%),
+      var(--void);
+    background-attachment: fixed;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(900px 600px at 50% 30%, black 30%, transparent 80%);
+  }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px; border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(12px); position: sticky; top: 0;
+    background: rgba(5, 6, 8, 0.7); z-index: 5;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }
+  .brand .logo {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    box-shadow: 0 0 22px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.3);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: white; font-family: var(--mono); font-weight: 600; font-size: 0.85rem;
+  }
+  .brand .pill {
+    font-family: var(--mono); font-size: 0.7rem; padding: 3px 8px;
+    background: rgba(167,139,250,0.10); color: var(--accent);
+    border: 1px solid rgba(167,139,250,0.22); border-radius: 999px;
+    margin-left: 4px;
+  }
+  .wallet {
+    font-family: var(--mono); font-size: 0.78rem; padding: 7px 13px;
+    border: 1px solid var(--line-strong); border-radius: 8px; color: var(--fg-dim);
+    background: rgba(255,255,255,0.02); display: flex; align-items: center; gap: 8px;
+  }
+  .wallet .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pass); box-shadow: 0 0 8px var(--pass); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  main { max-width: 1320px; margin: 0 auto; padding: 56px 28px 96px; position: relative; z-index: 1; }
+
+  .hero {
+    display: grid; grid-template-columns: 1fr; gap: 64px; margin-bottom: 64px;
+  }
+  .hero h1 {
+    font-size: clamp(2.4rem, 4.5vw, 3.6rem); font-weight: 600; letter-spacing: -0.035em; line-height: 1.05;
+    max-width: 22ch;
+  }
+  .hero h1 .accent { color: var(--accent); position: relative; }
+  .hero h1 .accent::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .hero .lede { font-size: 1.05rem; line-height: 1.6; color: var(--fg-dim); max-width: 600px; margin-top: 20px; }
+  .hero-meta {
+    display: flex; gap: 8px; margin-top: 28px; flex-wrap: wrap;
+  }
+  .meta-tag {
+    font-family: var(--mono); font-size: 0.74rem; padding: 5px 11px;
+    background: var(--void-3); border: 1px solid var(--line); border-radius: 6px;
+    color: var(--fg-dim);
+  }
+  .meta-tag b { color: var(--fg); padding-left: 4px; }
+
+  /* The grid: stack viz | live ticker */
+  .lab { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px; margin-bottom: 64px; }
+
+  /* STACK ============================================================ */
+  .stack-card {
+    background: linear-gradient(180deg, var(--void-3), var(--void-2));
+    border: 1px solid var(--line); border-radius: 14px;
+    padding: 28px; box-shadow: 0 30px 60px -30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
+    position: relative; overflow: hidden;
+  }
+  .stack-card::after {
+    content: ""; position: absolute; top: -50%; right: -20%; width: 60%; height: 100%;
+    background: radial-gradient(closest-side, var(--accent-glow), transparent 70%);
+  }
+  .stack-card h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--fg-dim); font-weight: 500; margin-bottom: 24px; position: relative; z-index: 1;}
+  .stack-card h2 .live { color: var(--pass); margin-left: 8px; font-size: 0.7rem; }
+  .stack-frames { display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }
+  .frame {
+    display: grid; grid-template-columns: 28px 1fr auto auto;
+    align-items: center; gap: 16px;
+    padding: 14px 18px; border-radius: 10px;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.86rem;
+    transition: all 200ms cubic-bezier(0.23,1,0.32,1);
+  }
+  .frame:hover { background: rgba(255,255,255,0.04); border-color: var(--line-strong); transform: translateX(2px); }
+  .frame .level { font-weight: 600; color: var(--fg-faint); font-size: 0.75rem; text-align: center; }
+  .frame .name { color: var(--fg); font-weight: 500; }
+  .frame .name small { color: var(--fg-faint); font-weight: 400; padding-left: 8px; }
+  .frame .status {
+    font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.04em;
+    font-weight: 600; text-transform: uppercase;
+  }
+  .frame.pass .status { color: var(--pass); background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.25); }
+  .frame.idle .status { color: var(--fg-faint); background: rgba(255,255,255,0.04); border: 1px solid var(--line); }
+  .frame.live .status {
+    color: var(--accent); background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.30);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  .frame .cu { font-size: 0.75rem; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+  .frame.parent { background: linear-gradient(180deg, rgba(167,139,250,0.10), rgba(167,139,250,0.04)); border-color: rgba(167,139,250,0.25); }
+  .frame.parent .name { color: var(--accent); }
+  .stack-sub { padding-left: 24px; border-left: 1px dashed var(--line-strong); margin-left: 14px; }
+
+  /* LIVE TICKER =====================================================*/
+  .ticker {
+    background: var(--void-2); border: 1px solid var(--line); border-radius: 14px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .ticker header {
+    padding: 18px 22px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .ticker header h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--fg-dim); font-weight: 500; }
+  .ticker header .count { font-family: var(--mono); font-size: 0.74rem; color: var(--fg-faint); }
+  .ticker-rows { padding: 6px 0; }
+  .row {
+    display: grid; grid-template-columns: 60px 80px 1fr auto auto;
+    align-items: center; gap: 14px;
+    padding: 9px 22px;
+    font-family: var(--mono); font-size: 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .row:last-child { border: 0; }
+  .row .ts { color: var(--fg-faint); font-size: 0.74rem; font-variant-numeric: tabular-nums; }
+  .row .verdict {
+    text-align: center; padding: 2px 6px; border-radius: 3px; font-size: 0.7rem; letter-spacing: 0.04em;
+    font-weight: 600; text-transform: uppercase;
+  }
+  .row .verdict.pass { color: var(--pass); background: rgba(52,211,153,0.10); }
+  .row .verdict.fail { color: var(--fail); background: rgba(248,113,113,0.10); }
+  .row .who { color: var(--fg-dim); }
+  .row .amt { color: var(--fg); font-weight: 500; }
+  .row .cu { color: var(--fg-faint); font-size: 0.74rem; font-variant-numeric: tabular-nums; }
+  .row.fresh { background: rgba(167,139,250,0.04); animation: flash 1s ease-out; }
+  @keyframes flash { 0% { background: rgba(167,139,250,0.18); } 100% { background: transparent; } }
+
+  /* DEMO STEPS ====================================================== */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 64px; }
+  .step {
+    background: var(--void-2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px;
+    transition: all 180ms cubic-bezier(0.23,1,0.32,1);
+  }
+  .step:hover { border-color: var(--line-strong); }
+  .step .num { font-family: var(--mono); font-size: 0.74rem; color: var(--accent); margin-bottom: 12px; }
+  .step h4 { font-size: 0.95rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .step p { font-size: 0.82rem; line-height: 1.5; color: var(--fg-dim); margin-bottom: 16px; }
+  .step .btn {
+    width: 100%; font-family: inherit; font-size: 0.82rem; font-weight: 500;
+    padding: 9px 14px; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--line-strong); background: rgba(255,255,255,0.03); color: var(--fg);
+    transition: all 150ms cubic-bezier(0.23,1,0.32,1);
+  }
+  .step .btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.22); }
+  .step .btn:active { transform: scale(0.97); transition-duration: 80ms; }
+  .step .btn.primary {
+    background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+    color: white; border: 0; box-shadow: 0 6px 18px -6px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.25);
+    font-weight: 600;
+  }
+
+  .dna {
+    position: fixed; bottom: 16px; right: 16px;
+    font-family: var(--mono); font-size: 0.7rem; padding: 8px 12px;
+    background: rgba(0,0,0,0.6); border: 1px solid var(--line-strong); border-radius: 999px;
+    color: var(--fg-faint); backdrop-filter: blur(8px);
+  }
+</style>
+</head>
+<body>
+<div class="dna">DNA-VOID-STACK-GEIST-PULSE-VIOLET</div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">⏚</span>
+    <span>metahook</span>
+    <span class="pill">v0.1 · devnet</span>
+  </div>
+  <span class="wallet"><span class="dot"></span><span>FV3v…iKo9</span></span>
+</header>
+
+<main>
+  <section class="hero">
+    <div>
+      <h1>Compose <span class="accent">N policies</span> onto a single Token-2022 mint.</h1>
+      <p class="lede">
+        One transfer hook orchestrates your entire compliance stack. Allowlist + sanctions +
+        whatever else you bolt on. Each verdict on-chain. Each transfer auditable from the chain alone.
+      </p>
+      <div class="hero-meta">
+        <span class="meta-tag">CPI depth <b>3 / 4</b></span>
+        <span class="meta-tag">CU <b>33,346</b></span>
+        <span class="meta-tag">reentrancy <b>guarded</b></span>
+        <span class="meta-tag">aggregation <b>AND</b></span>
+        <span class="meta-tag">Anchor <b>v0.32.1</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="lab">
+    <div class="stack-card">
+      <h2>Execution Stack <span class="live">● live</span></h2>
+      <div class="stack-frames">
+        <div class="frame parent">
+          <span class="level">L1</span>
+          <span class="name">Token-2022.transferChecked <small>spl-token</small></span>
+          <span class="cu">27,680 CU</span>
+          <span class="status">root</span>
+        </div>
+        <div class="stack-sub">
+          <div class="frame parent">
+            <span class="level">L2</span>
+            <span class="name">metahook.execute <small>fallback dispatcher</small></span>
+            <span class="cu">13,606 CU</span>
+            <span class="status">cpi</span>
+          </div>
+          <div class="stack-sub">
+            <div class="frame pass">
+              <span class="level">L3</span>
+              <span class="name">policy_allowlist::check_transfer</span>
+              <span class="cu">2,168 CU</span>
+              <span class="status">pass</span>
+            </div>
+            <div class="frame live">
+              <span class="level">L3</span>
+              <span class="name">policy_sanctions_ofac::check_transfer</span>
+              <span class="cu">2,114 CU</span>
+              <span class="status">running</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ticker">
+      <header>
+        <h3>Recent verdicts</h3>
+        <span class="count">last 12 transfers</span>
+      </header>
+      <div class="ticker-rows">
+        <div class="row fresh">
+          <span class="ts">12:04:33</span>
+          <span class="verdict pass">approve</span>
+          <span class="who">CYpx…BHyb · 100</span>
+          <span class="amt">100</span>
+          <span class="cu">33,346</span>
+        </div>
+        <div class="row">
+          <span class="ts">12:04:18</span>
+          <span class="verdict fail">block</span>
+          <span class="who">3xQp…m9R8 · 50</span>
+          <span class="amt">50</span>
+          <span class="cu">13,606</span>
+        </div>
+        <div class="row">
+          <span class="ts">12:04:02</span>
+          <span class="verdict pass">approve</span>
+          <span class="who">8nLK…qfa1 · 250</span>
+          <span class="amt">250</span>
+          <span class="cu">33,121</span>
+        </div>
+        <div class="row">
+          <span class="ts">12:03:51</span>
+          <span class="verdict fail">block</span>
+          <span class="who">9XYa…Z1bc · 1000</span>
+          <span class="amt">1k</span>
+          <span class="cu">15,402</span>
+        </div>
+        <div class="row">
+          <span class="ts">12:03:41</span>
+          <span class="verdict pass">approve</span>
+          <span class="who">4f5B…2nuy · 100</span>
+          <span class="amt">100</span>
+          <span class="cu">33,488</span>
+        </div>
+        <div class="row">
+          <span class="ts">12:03:22</span>
+          <span class="verdict pass">approve</span>
+          <span class="who">2xQp…m1R8 · 75</span>
+          <span class="amt">75</span>
+          <span class="cu">33,250</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="steps">
+    <div class="step">
+      <div class="num">step 01</div>
+      <h4>Provision the mint</h4>
+      <p>One signed bundle: allowlist PDA, OFAC PDA, mint, ExtraAccountMetaList, ATAs.</p>
+      <button class="btn primary">Provision (1 sig)</button>
+    </div>
+    <div class="step">
+      <div class="num">step 02</div>
+      <h4>Try a stranger</h4>
+      <p>Transfer to a non-allowlisted wallet. Hook reverts at policy_allowlist depth 3.</p>
+      <button class="btn">Send (expect revert)</button>
+    </div>
+    <div class="step">
+      <div class="num">step 03</div>
+      <h4>Add to allowlist</h4>
+      <p>Single CPI to <code>add_allowed</code>. MetaHook code untouched.</p>
+      <button class="btn">Allow address</button>
+    </div>
+    <div class="step">
+      <div class="num">step 04</div>
+      <h4>Watch the verdict land</h4>
+      <p>Both policies pass; MetaHookAuditEvent in tx logs.</p>
+      <button class="btn primary">Retry (expect approve)</button>
+    </div>
+  </section>
+</main>
+</body>
+</html>

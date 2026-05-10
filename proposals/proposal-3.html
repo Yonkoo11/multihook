@@ -1,0 +1,379 @@
+<!doctype html>
+<!--
+  PROPOSAL 3 — "COMPLIANCE CONSOLE" (DNA-NAVY-CONSOLE-INTER-SAGE-CYAN)
+  Metaphor: dual-pane ops console. Left = compose, right = live preview.
+  Influences: Stripe Dashboard, Datadog, Vercel observability, sage/coral semantic palette.
+  Distinctive choice: dual-pane "compose left, evaluate right" interaction model + metric-row hero.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proposal 3 · Compliance Console</title>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+  :root {
+    --navy: #060912;
+    --navy-2: #0b1020;
+    --navy-3: #11182c;
+    --navy-4: #19223a;
+    --navy-5: #232c47;
+    --line: rgba(255,255,255,0.07);
+    --line-strong: rgba(255,255,255,0.14);
+    --fg: #eaf0fb;
+    --fg-dim: #8794ad;
+    --fg-faint: #4d5a73;
+    --cyan: #22d3ee;
+    --cyan-deep: #0891b2;
+    --cyan-glow: rgba(34,211,238,0.20);
+    --sage: #6ee7b7;
+    --sage-deep: #10b981;
+    --coral: #fb7185;
+    --coral-deep: #be123c;
+    --warn: #fbbf24;
+    --inter: "Inter", -apple-system, ui-sans-serif, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--navy);
+    color: var(--fg);
+    font-family: var(--inter);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+  }
+  body {
+    background:
+      radial-gradient(900px 500px at 80% -10%, var(--cyan-glow), transparent 65%),
+      radial-gradient(700px 400px at 0% 40%, rgba(110,231,183,0.10), transparent 60%),
+      radial-gradient(900px 600px at 50% 110%, rgba(34,211,238,0.08), transparent 60%),
+      var(--navy);
+    background-attachment: fixed;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='1' /></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5' /></svg>");
+    opacity: 0.04; mix-blend-mode: overlay;
+  }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px; border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(12px); position: sticky; top: 0;
+    background: rgba(6,9,18,0.7); z-index: 5;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 14px;
+    font-weight: 600; font-size: 1rem; letter-spacing: -0.01em;
+  }
+  .brand .badge {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--cyan), var(--cyan-deep));
+    color: var(--navy); font-family: var(--mono); font-weight: 700; font-size: 0.85rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 24px var(--cyan-glow);
+  }
+  .brand .meta {
+    font-size: 0.74rem; color: var(--fg-faint); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.10em;
+    border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px;
+  }
+  .nav { display: flex; gap: 4px; }
+  .nav a {
+    padding: 7px 14px; font-size: 0.84rem; color: var(--fg-dim);
+    border-radius: 6px; cursor: pointer; transition: all 150ms;
+  }
+  .nav a:hover { color: var(--fg); background: rgba(255,255,255,0.04); }
+  .nav a.active { color: var(--fg); background: rgba(34,211,238,0.10); }
+  .wallet {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 0.78rem; padding: 7px 12px;
+    border: 1px solid var(--line-strong); border-radius: 8px; color: var(--fg-dim);
+    background: rgba(255,255,255,0.02);
+  }
+  .wallet .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); box-shadow: 0 0 10px var(--sage); }
+
+  main { max-width: 1380px; margin: 0 auto; padding: 36px 32px 80px; }
+
+  /* HERO + KPI ROW =================================================*/
+  .hero { margin-bottom: 32px; }
+  .hero h1 { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; max-width: 24ch; margin-bottom: 10px; }
+  .hero h1 em { font-style: normal; color: var(--cyan); }
+  .hero .lede { color: var(--fg-dim); font-size: 1rem; line-height: 1.55; max-width: 640px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 32px 0; }
+  .kpi {
+    background: var(--navy-2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .kpi::after {
+    content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent); opacity: 0.5;
+  }
+  .kpi .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.10em; color: var(--fg-faint); font-weight: 500; margin-bottom: 8px; }
+  .kpi .value { font-size: 1.7rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .kpi .delta { font-size: 0.78rem; color: var(--sage); font-family: var(--mono); margin-top: 6px; }
+  .kpi .spark { position: absolute; right: 16px; top: 16px; opacity: 0.7; }
+
+  /* CONSOLE: dual-pane ===============================================*/
+  .console {
+    display: grid; grid-template-columns: 0.92fr 1.08fr; gap: 16px;
+    background: var(--navy-2); border: 1px solid var(--line); border-radius: 16px;
+    padding: 4px; margin-bottom: 32px;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,0.6);
+  }
+  .pane { padding: 24px 26px; }
+  .pane.left { border-right: 1px solid var(--line); }
+  .pane h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--fg-dim); font-weight: 500; margin-bottom: 18px; }
+  .pane h3 .corner { float: right; font-family: var(--mono); font-size: 0.74rem; color: var(--fg-faint); text-transform: none; letter-spacing: 0; }
+
+  .policy-stack { display: flex; flex-direction: column; gap: 10px; }
+  .policy {
+    display: grid; grid-template-columns: 36px 1fr auto;
+    gap: 14px; align-items: center;
+    padding: 14px 16px; border-radius: 10px;
+    background: rgba(255,255,255,0.025); border: 1px solid var(--line);
+    transition: all 180ms cubic-bezier(0.23,1,0.32,1);
+    cursor: grab;
+  }
+  .policy:hover { border-color: var(--cyan-glow); background: rgba(34,211,238,0.05); }
+  .policy .icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(34,211,238,0.10); color: var(--cyan);
+    font-family: var(--mono); font-size: 0.82rem; font-weight: 700;
+  }
+  .policy.s .icon { background: rgba(110,231,183,0.10); color: var(--sage); }
+  .policy.x .icon { background: rgba(251,113,133,0.10); color: var(--coral); }
+  .policy .body { font-size: 0.92rem; }
+  .policy .body strong { display: block; font-weight: 500; color: var(--fg); margin-bottom: 2px; }
+  .policy .body small { font-size: 0.78rem; color: var(--fg-dim); font-family: var(--mono); }
+  .policy .switch {
+    width: 38px; height: 22px; border-radius: 999px; background: var(--cyan);
+    position: relative; box-shadow: 0 0 12px var(--cyan-glow);
+  }
+  .policy .switch::after {
+    content: ""; position: absolute; top: 2px; right: 2px; width: 18px; height: 18px;
+    background: var(--navy); border-radius: 50%;
+  }
+  .policy.off .switch { background: var(--navy-5); box-shadow: none; }
+  .policy.off .switch::after { right: auto; left: 2px; background: var(--fg-dim); }
+  .add-row {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px; border-radius: 10px; border: 1px dashed var(--line-strong);
+    color: var(--fg-faint); font-size: 0.84rem; cursor: pointer; transition: all 150ms;
+  }
+  .add-row:hover { color: var(--cyan); border-color: rgba(34,211,238,0.35); background: rgba(34,211,238,0.04); }
+
+  /* preview pane ==================================================== */
+  .preview-tx {
+    border: 1px solid rgba(110,231,183,0.20); background: linear-gradient(180deg, rgba(110,231,183,0.04), rgba(110,231,183,0.01));
+    border-radius: 12px; padding: 20px;
+    box-shadow: 0 0 40px rgba(110,231,183,0.04);
+  }
+  .preview-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .preview-meta .field { font-family: var(--mono); }
+  .preview-meta .field .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.10em; color: var(--fg-faint); margin-bottom: 4px; font-family: var(--inter); font-weight: 500; }
+  .preview-meta .field .value { color: var(--fg); font-size: 0.86rem; }
+  .preview-meta .field.amount .value { font-size: 1.25rem; color: var(--sage); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .verdict-list { display: flex; flex-direction: column; gap: 8px; }
+  .verdict-item {
+    display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center;
+    padding: 11px 14px; border-radius: 8px;
+    background: rgba(255,255,255,0.025); font-size: 0.86rem;
+  }
+  .verdict-item .name { font-weight: 500; }
+  .verdict-item .name small { display: block; font-size: 0.74rem; color: var(--fg-faint); font-family: var(--mono); margin-top: 2px; }
+  .verdict-item .cu { font-family: var(--mono); font-size: 0.78rem; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+  .verdict-item .badge {
+    font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;
+    font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--sage); background: rgba(110,231,183,0.10); border: 1px solid rgba(110,231,183,0.30);
+  }
+  .verdict-item.fail .badge { color: var(--coral); background: rgba(251,113,133,0.10); border-color: rgba(251,113,133,0.30); }
+  .final-banner {
+    margin-top: 16px; padding: 16px;
+    background: linear-gradient(180deg, rgba(110,231,183,0.10), rgba(110,231,183,0.02));
+    border: 1px solid rgba(110,231,183,0.30); border-radius: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .final-banner .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--sage); font-weight: 600; }
+  .final-banner .value { font-size: 1.5rem; font-weight: 600; color: var(--sage); letter-spacing: -0.02em; }
+
+  /* DEMO STEPS ====================================================== */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .step {
+    background: var(--navy-2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 22px;
+    transition: all 180ms cubic-bezier(0.23,1,0.32,1);
+  }
+  .step:hover { border-color: var(--line-strong); transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.5); }
+  .step .num {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--cyan);
+    text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px;
+  }
+  .step h4 { font-size: 0.96rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; line-height: 1.25; }
+  .step p { font-size: 0.84rem; line-height: 1.55; color: var(--fg-dim); margin-bottom: 18px; min-height: 64px; }
+  .step .btn {
+    width: 100%; font-family: inherit; font-size: 0.86rem; font-weight: 500;
+    padding: 10px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line-strong); background: rgba(255,255,255,0.03); color: var(--fg);
+    transition: all 150ms cubic-bezier(0.23,1,0.32,1);
+  }
+  .step .btn:hover { background: rgba(255,255,255,0.06); border-color: var(--line-strong); }
+  .step .btn:active { transform: scale(0.97); transition-duration: 80ms; }
+  .step .btn.primary {
+    background: linear-gradient(180deg, var(--cyan), var(--cyan-deep));
+    color: var(--navy); border: 0; font-weight: 600;
+    box-shadow: 0 6px 18px -6px var(--cyan-glow), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+
+  .dna {
+    position: fixed; bottom: 16px; right: 16px;
+    font-family: var(--mono); font-size: 0.7rem; padding: 8px 12px;
+    background: rgba(0,0,0,0.6); border: 1px solid var(--line-strong); border-radius: 999px;
+    color: var(--fg-faint); backdrop-filter: blur(8px);
+  }
+</style>
+</head>
+<body>
+<div class="dna">DNA-NAVY-CONSOLE-INTER-SAGE-CYAN</div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="badge">M</span>
+    <span>MetaHook</span>
+    <span class="meta">devnet</span>
+  </div>
+  <nav class="nav">
+    <a class="active">Console</a>
+    <a>Audit log</a>
+    <a>Policies</a>
+    <a>Docs</a>
+  </nav>
+  <span class="wallet"><span class="dot"></span>FV3v…iKo9 · 14.59 SOL</span>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Compose your compliance stack. <em>Stamp every transfer.</em></h1>
+    <p class="lede">
+      One transfer hook orchestrates as many policies as you ship. Allowlist, sanctions, jurisdiction, balance-cap —
+      each a separate program, each emits its verdict, all aggregated on-chain in a single audit event.
+    </p>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi">
+      <div class="label">CPI depth</div>
+      <div class="value">3<span style="color:var(--fg-faint);font-size:1rem;font-weight:400;"> / 4</span></div>
+      <div class="delta">+1 headroom</div>
+    </div>
+    <div class="kpi">
+      <div class="label">CU per transfer</div>
+      <div class="value">33,346</div>
+      <div class="delta">16% of budget</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Active policies</div>
+      <div class="value">2</div>
+      <div class="delta" style="color:var(--cyan);">+1 to add (sanctions+)</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Approve rate · 24h</div>
+      <div class="value">94.2<span style="font-size:1rem;color:var(--fg-faint);">%</span></div>
+      <div class="delta">↑ 2.1% vs yesterday</div>
+    </div>
+  </section>
+
+  <section class="console">
+    <div class="pane left">
+      <h3>Your policy stack <span class="corner">drag to reorder</span></h3>
+      <div class="policy-stack">
+        <div class="policy">
+          <span class="icon">A</span>
+          <div class="body">
+            <strong>policy_allowlist</strong>
+            <small>GJHx…ZehyN · authority gated</small>
+          </div>
+          <span class="switch"></span>
+        </div>
+        <div class="policy s">
+          <span class="icon">S</span>
+          <div class="body">
+            <strong>policy_sanctions_ofac</strong>
+            <small>5iz6…JkWt · 1 stub address seeded</small>
+          </div>
+          <span class="switch"></span>
+        </div>
+        <div class="policy x off">
+          <span class="icon">J</span>
+          <div class="body">
+            <strong>policy_jurisdiction</strong>
+            <small>(coming v2) geo-IP attestation</small>
+          </div>
+          <span class="switch"></span>
+        </div>
+        <div class="add-row">+ Add a policy program</div>
+      </div>
+    </div>
+
+    <div class="pane right">
+      <h3>Live preview · simulated transfer <span class="corner">slot 387,432,109</span></h3>
+      <div class="preview-tx">
+        <div class="preview-meta">
+          <div class="field"><div class="label">from</div><div class="value">kS8G…6Adw</div></div>
+          <div class="field"><div class="label">to</div><div class="value">CYpx…BHyb</div></div>
+          <div class="field amount"><div class="label">amount</div><div class="value">100</div></div>
+        </div>
+        <div class="verdict-list">
+          <div class="verdict-item">
+            <div class="name">policy_allowlist<small>depth 3 · check_transfer</small></div>
+            <span class="cu">2,168 CU</span>
+            <span class="badge">pass</span>
+          </div>
+          <div class="verdict-item">
+            <div class="name">policy_sanctions_ofac<small>depth 3 · check_transfer</small></div>
+            <span class="cu">2,114 CU</span>
+            <span class="badge">pass</span>
+          </div>
+        </div>
+        <div class="final-banner">
+          <span class="label">aggregated verdict (AND)</span>
+          <span class="value">approve · 33,346 CU</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="steps">
+    <div class="step">
+      <div class="num">step 01</div>
+      <h4>Provision the mint</h4>
+      <p>One signed bundle: allowlist PDA, OFAC PDA, mint with TransferHook ext, ExtraAccountMetaList, ATAs.</p>
+      <button class="btn primary">Provision (1 sig)</button>
+    </div>
+    <div class="step">
+      <div class="num">step 02</div>
+      <h4>Try a stranger</h4>
+      <p>Transfer to a wallet not on the allowlist. Hook reverts at policy_allowlist, depth 3.</p>
+      <button class="btn">Send (expect revert)</button>
+    </div>
+    <div class="step">
+      <div class="num">step 03</div>
+      <h4>Add to allowlist</h4>
+      <p>Single CPI to <code>add_allowed</code>. The MetaHook program code stays untouched.</p>
+      <button class="btn">Allow address</button>
+    </div>
+    <div class="step">
+      <div class="num">step 04</div>
+      <h4>Watch the verdict land</h4>
+      <p>Both policies pass; the audit event lands in the tx logs and shows up in the console above.</p>
+      <button class="btn primary">Retry (expect approve)</button>
+    </div>
+  </section>
+</main>
+</body>
+</html>
