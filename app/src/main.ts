@@ -31,6 +31,7 @@ import {
   SignedReceipt,
   tryTransferExpectFail,
 } from "./demo";
+import { mountAnalytics } from "./analytics-render";
 
 interface UI {
   walletStatus: HTMLElement;
@@ -495,6 +496,16 @@ async function init() {
   ui.transferOkBtn.onclick = onTransferOk;
   ui.resetBtn.onclick = onReset;
   refreshIdsTable();
+
+  // Mount the live-mint analytics section. The renderer reads VITE_MAINNET_MINT
+  // + VITE_GOLDRUSH_KEY + VITE_BIRDEYE_KEY + VITE_DUNE_DASHBOARD_URL at call
+  // time and renders gracefully when any of them are unset.
+  const analyticsBox = document.getElementById("analyticsBox");
+  if (analyticsBox) {
+    mountAnalytics(analyticsBox).catch((e) => {
+      console.error("analytics mount failed", e);
+    });
+  }
 
   const provider = getPhantomProvider();
   if (provider?.isConnected || provider?.publicKey) {

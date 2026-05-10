@@ -8,6 +8,37 @@ interface ImportMetaEnv {
    * builds without secrets.
    */
   readonly VITE_HELIUS_KEY?: string;
+
+  /**
+   * Optional mainnet Token-2022 mint address protected by MetaHook. When
+   * set, the dApp renders the "Live Mint Analytics" section that pulls
+   * data from GoldRush + Birdeye + Dune for the production deployment.
+   * Unset → analytics section shows a placeholder explaining how it
+   * activates.
+   */
+  readonly VITE_MAINNET_MINT?: string;
+
+  /**
+   * GoldRush (Covalent) API key for the mainnet token-holders + tx-history
+   * panel. Domain-restricted to yonkoo11.github.io in the Covalent
+   * dashboard. Unset → GoldRush panel shows "configure to activate".
+   */
+  readonly VITE_GOLDRUSH_KEY?: string;
+
+  /**
+   * Birdeye API key for the mainnet mint analytics panel. Domain-restricted
+   * to yonkoo11.github.io in the Birdeye dashboard. Unset → Birdeye panel
+   * shows "configure to activate".
+   */
+  readonly VITE_BIRDEYE_KEY?: string;
+
+  /**
+   * Public Dune dashboard URL for the MetaHookAuditEvent materialized view.
+   * Embedded as an iframe at the bottom of the analytics section. Unset →
+   * iframe placeholder shows the SQL source path the dashboard is built
+   * from.
+   */
+  readonly VITE_DUNE_DASHBOARD_URL?: string;
 }
 
 interface ImportMeta {
