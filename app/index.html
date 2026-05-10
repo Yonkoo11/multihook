@@ -184,46 +184,51 @@
           Compose middleware for token transfers.
         </h2>
         <p class="section-body">
-          MetaHook is a Solana Token-2022 transfer-hook program that delegates to N
-          child policy programs via CPI, AND-aggregates their verdicts, and emits a
-          single <code>MetaHookAuditEvent</code> with the per-policy outcomes. Each
-          child policy is a standalone Solana program implementing a
-          <a href="./docs/policies/" class="inline-link">common interface</a>.
-          Anyone can write a new policy in ~200 lines of Rust and slot it into the
-          meta-hook without touching the meta-hook's code. Reentrancy-guarded.
-          CPI depth ≤ 3. 33,346 CU per transfer with 2 policies (16% of Token-2022's
-          200K transfer budget).
+          Fork a child policy. Append it to your <code>ExtraAccountMetaList</code>. Your
+          mint enforces the new rule on every transfer — and your existing policies
+          keep firing in the same CPI chain, untouched. Two policies plus meta-hook
+          overhead clocks 33,346 CU (16% of Token-2022's per-transfer budget).
+          Reentrancy-guarded at a byte-flip PDA. ~200 lines of Rust per policy, and a
+          single <a href="./docs/policies/" class="inline-link">common interface</a>
+          that anyone can implement.
         </p>
         <div class="solution-cards">
-          <a href="./docs/policies/" class="solution-card">
-            <div class="solution-card-tag">Public spec</div>
-            <h3 class="solution-card-title">POLICY_INTERFACE</h3>
-            <p class="solution-card-desc">
-              Sign your <code>check_transfer</code> against this contract, follow the
-              PDA seed convention, and your policy slots into any MetaHook deployment
-              without code changes.
-            </p>
-            <span class="solution-card-go">Read the spec →</span>
-          </a>
-          <a href="./docs/governance/" class="solution-card">
-            <div class="solution-card-tag">Production guide</div>
-            <h3 class="solution-card-title">POLICY_AUTHORITY</h3>
-            <p class="solution-card-desc">
-              Don't single-key your compliance state. Wire the policy authority to a
-              Squads multisig. 2-of-3 worked example with code stubs.
-            </p>
-            <span class="solution-card-go">Read the guide →</span>
-          </a>
-          <a href="./demo/" class="solution-card">
-            <div class="solution-card-tag">Try it</div>
+          <a href="./demo/" class="solution-card solution-card-feature">
+            <div class="solution-card-tag">Try it now</div>
             <h3 class="solution-card-title">Live devnet demo</h3>
             <p class="solution-card-desc">
               Connect Phantom, provision a Token-2022 mint, watch the hook reject
-              + approve transfers in real time, decode the audit event in your
-              browser.
+              a transfer to a non-allowlisted wallet, add it to the allowlist,
+              retry — see the <code>MetaHookAuditEvent</code> decoded out of the
+              program logs in your browser.
             </p>
+            <ul class="solution-card-list">
+              <li>5 stations</li>
+              <li>~3 signatures</li>
+              <li>~90 seconds end-to-end</li>
+            </ul>
             <span class="solution-card-go">Open the demo →</span>
           </a>
+          <div class="solution-card-stack">
+            <a href="./docs/policies/" class="solution-card">
+              <div class="solution-card-tag">Public spec</div>
+              <h3 class="solution-card-title">POLICY_INTERFACE</h3>
+              <p class="solution-card-desc">
+                Implement <code>check_transfer</code>, follow the PDA seed convention.
+                Your policy slots into any MetaHook deployment without code changes.
+              </p>
+              <span class="solution-card-go">Read the spec →</span>
+            </a>
+            <a href="./docs/governance/" class="solution-card">
+              <div class="solution-card-tag">Production guide</div>
+              <h3 class="solution-card-title">POLICY_AUTHORITY</h3>
+              <p class="solution-card-desc">
+                Don't single-key compliance state. Wire the authority to a Squads
+                2-of-3 — worked example with code stubs.
+              </p>
+              <span class="solution-card-go">Read the guide →</span>
+            </a>
+          </div>
         </div>
       </section>
 

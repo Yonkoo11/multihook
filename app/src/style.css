@@ -165,7 +165,7 @@ body {
 .brand-name small {
   color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-weight: 500;
@@ -255,18 +255,18 @@ a.btn, a.btn:hover, a.btn:focus, a.btn:visited { text-decoration: none; }
 /* SIWS issuer-session pill */
 .siws-pill {
   font-family: var(--mono);
-  font-size: 0.74rem;
+  font-size: 0.86rem;
   padding: 7px 12px 7px 10px;
   border: 1px solid rgba(245, 166, 35, 0.36);
   border-radius: 999px;
   color: var(--text);
-  background: rgba(245, 166, 35, 0.06);
+  background: rgba(245, 166, 35, 0.12);
   display: inline-flex; align-items: center; gap: 6px;
   margin-left: 10px;
   letter-spacing: -0.01em;
 }
 .siws-pill-tag {
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   letter-spacing: 0.10em;
   padding: 2px 6px;
   border-radius: 3px;
@@ -276,7 +276,7 @@ a.btn, a.btn:hover, a.btn:focus, a.btn:visited { text-decoration: none; }
 }
 .siws-pill-out {
   background: transparent; border: 0; color: var(--text-faint);
-  font-family: var(--mono); font-size: 0.66rem; cursor: pointer;
+  font-family: var(--mono); font-size: 0.78rem; cursor: pointer;
   padding: 0 0 0 8px; text-decoration: underline;
 }
 .siws-pill-out:hover { color: var(--reject); }
@@ -310,7 +310,7 @@ main {
 .demo-banner-left { max-width: 60ch; }
 .demo-banner-eyebrow {
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--cobalt-2);
@@ -414,7 +414,7 @@ main {
 .hero-stat:last-child { border-right: 0; }
 .hero-stat .label {
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -448,7 +448,7 @@ main {
   display: flex; justify-content: space-between;
   margin-top: 16px;
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--text-faint);
@@ -546,7 +546,7 @@ main {
 .station-num {
   display: inline-block;
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cobalt);
@@ -590,7 +590,7 @@ main {
 .logbox {
   margin-top: 14px;
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.84rem;
   line-height: 1.55;
   color: var(--text-dim);
   max-height: 0;
@@ -652,7 +652,7 @@ main {
 .audit-stamp::after {
   content: "APPROVED";
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.10em;
   color: var(--stamp);
@@ -671,7 +671,7 @@ main {
 }
 .audit-receipt-id {
   font-family: var(--mono);
-  font-size: 0.74rem;
+  font-size: 0.86rem;
   color: var(--text-faint);
   margin-bottom: 18px;
   letter-spacing: 0.04em;
@@ -691,7 +691,7 @@ main {
   color: var(--text-faint);
   text-transform: uppercase;
   letter-spacing: 0.10em;
-  font-size: 0.70rem;
+  font-size: 0.81rem;
   padding-top: 3px;
 }
 .audit-table dd {
@@ -711,13 +711,13 @@ main {
   padding: 20px 22px;
   border: 1px dashed rgba(245, 166, 35, 0.30);
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(245, 166, 35, 0.04), rgba(245, 166, 35, 0.01));
+  background: linear-gradient(180deg, rgba(245, 166, 35, 0.10), rgba(245, 166, 35, 0.04));
   z-index: 1;
 }
 .audit-signed-title {
   margin: 0 0 14px;
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--stamp);
@@ -749,7 +749,7 @@ main {
   border: 1px solid rgba(245, 166, 35, 0.16);
   border-radius: 8px;
   color: var(--text);
-  font-size: 0.72rem;
+  font-size: 0.84rem;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-all;
@@ -787,7 +787,7 @@ main {
 }
 .audit-feed-source {
   font-family: var(--mono);
-  font-size: 0.64rem;
+  font-size: 0.78rem;
   color: var(--cobalt-2);
   letter-spacing: 0.08em;
   text-transform: lowercase;
@@ -833,7 +833,7 @@ main {
   display: flex; align-items: center; gap: 12px;
 }
 .audit-feed-tag {
-  font-size: 0.60rem;
+  font-size: 0.75rem;
   letter-spacing: 0.10em;
   padding: 3px 8px;
   border-radius: 3px;
@@ -851,7 +851,7 @@ main {
 }
 .audit-feed-time {
   color: var(--text-faint);
-  font-size: 0.70rem;
+  font-size: 0.81rem;
   font-variant-numeric: tabular-nums;
 }
 .audit-feed-right {
@@ -866,7 +866,7 @@ main {
 .audit-feed-sig:hover { text-decoration: underline; }
 .audit-feed-detail {
   color: var(--text-dim);
-  font-size: 0.72rem;
+  font-size: 0.84rem;
   font-variant-numeric: tabular-nums;
 }
 .audit-feed-reason {
@@ -941,7 +941,7 @@ main {
 }
 .analytics-panel-source {
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   color: var(--cobalt-2);
   letter-spacing: 0.06em;
   text-transform: lowercase;
@@ -971,7 +971,7 @@ main {
 }
 .analytics-state-hint {
   margin: 6px 0 0;
-  font-size: 0.68rem;
+  font-size: 0.81rem;
   color: var(--text-faint);
 }
 .analytics-stats {
@@ -983,13 +983,13 @@ main {
 .analytics-stat {
   display: flex; flex-direction: column; gap: 2px;
   padding: 8px 10px;
-  background: rgba(245, 166, 35, 0.04);
+  background: rgba(245, 166, 35, 0.10);
   border-radius: 5px;
   border: 1px solid rgba(245, 166, 35, 0.10);
 }
 .analytics-stat .label {
   font-family: var(--mono);
-  font-size: 0.60rem;
+  font-size: 0.75rem;
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -1005,7 +1005,7 @@ main {
 .analytics-subhead {
   margin: 12px 0 4px;
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -1023,7 +1023,7 @@ main {
   padding: 6px 0;
   border-bottom: 1px solid var(--line);
   font-family: var(--mono);
-  font-size: 0.74rem;
+  font-size: 0.86rem;
 }
 .analytics-list-tx li { grid-template-columns: minmax(0, 1fr) auto auto; }
 .analytics-list a { color: var(--cobalt-2); text-decoration: none; word-break: break-all; }
@@ -1031,12 +1031,12 @@ main {
 .analytics-list-value {
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
-  font-size: 0.70rem;
+  font-size: 0.81rem;
   text-align: right;
 }
 .analytics-tag {
   font-family: var(--mono);
-  font-size: 0.60rem;
+  font-size: 0.75rem;
   letter-spacing: 0.05em;
   padding: 2px 6px;
   border-radius: 3px;
@@ -1056,7 +1056,7 @@ main {
 .analytics-link {
   margin-top: 12px;
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.84rem;
   color: var(--cobalt-2);
   text-decoration: none;
 }
@@ -1072,7 +1072,7 @@ main {
 }
 .ledger h3 {
   margin: 0 0 16px;
-  font-size: 0.70rem;
+  font-size: 0.81rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--text-faint);
@@ -1103,7 +1103,7 @@ footer {
   padding: 24px 40px;
   display: flex; justify-content: space-between;
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.84rem;
   color: var(--text-faint);
   letter-spacing: -0.005em;
   max-width: 1240px; margin-left: auto; margin-right: auto;
@@ -1114,7 +1114,7 @@ footer a:hover { text-decoration: underline; }
 /* ============================ EYEBROW + CTA ROW ======================= */
 .eyebrow {
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--cobalt-2);
@@ -1159,7 +1159,7 @@ footer a:hover { text-decoration: underline; }
 }
 .section-eyebrow {
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--cobalt-2);
@@ -1206,14 +1206,25 @@ footer a:hover { text-decoration: underline; }
 .inline-link { color: var(--cobalt-2); text-decoration: none; border-bottom: 1px solid rgba(91, 130, 255, 0.32); }
 .inline-link:hover { border-bottom-color: var(--cobalt-2); }
 
-/* solution cards (3-card grid below the solution section) */
+/* solution cards — broken-symmetry layout: one feature card (live demo) +
+   two stacked reference cards. Demo is the action that ships; the spec and
+   governance docs are reference material — give them appropriate weight. */
 .solution-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1.5fr 1fr;
   gap: 16px;
   margin-top: 32px;
+  align-items: stretch;
 }
-@media (max-width: 980px) { .solution-cards { grid-template-columns: 1fr; } }
+.solution-card-stack {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 980px) {
+  .solution-cards { grid-template-columns: 1fr; }
+  .solution-card-stack { grid-template-rows: auto auto; }
+}
 .solution-card {
   display: flex; flex-direction: column; gap: 10px;
   padding: 22px 24px;
@@ -1231,9 +1242,34 @@ footer a:hover { text-decoration: underline; }
   border-color: var(--cobalt);
   box-shadow: 0 0 32px var(--cobalt-glow);
 }
+/* feature card — primary CTA card, more presence than the reference cards */
+.solution-card-feature {
+  padding: 28px 30px;
+  gap: 14px;
+  background:
+    radial-gradient(560px 320px at 0% 0%, rgba(59, 102, 255, 0.10), transparent 60%),
+    var(--surface);
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 1px rgba(59, 102, 255, 0.18) inset, 0 0 36px rgba(59, 102, 255, 0.10);
+}
+.solution-card-feature:hover {
+  box-shadow: 0 0 0 1px rgba(59, 102, 255, 0.28) inset, 0 0 48px rgba(59, 102, 255, 0.18);
+}
+.solution-card-feature .solution-card-title { font-size: 1.32rem; }
+.solution-card-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 6px 16px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.solution-card-list li::before { content: "▸ "; color: var(--cobalt-2); }
 .solution-card-tag {
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cobalt-2);
@@ -1260,7 +1296,7 @@ footer a:hover { text-decoration: underline; }
 }
 .solution-card-go {
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.84rem;
   color: var(--cobalt-2);
   letter-spacing: -0.005em;
   margin-top: 4px;
@@ -1310,7 +1346,7 @@ footer a:hover { text-decoration: underline; }
 .depth-cell-note {
   grid-column: 1 / -1;
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: 0.81rem;
   color: var(--text-faint);
   line-height: 1.5;
   letter-spacing: -0.005em;
@@ -1358,7 +1394,7 @@ body.docs-page { background: var(--base); }
 }
 .docs-sidebar-eyebrow {
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -1398,7 +1434,7 @@ body.docs-page { background: var(--base); }
   border-left: 2px solid var(--cobalt);
   padding-left: 8px;
 }
-.docs-sidebar-toc a { font-family: var(--mono); font-size: 0.74rem; padding: 4px 10px; }
+.docs-sidebar-toc a { font-family: var(--mono); font-size: 0.86rem; padding: 4px 10px; }
 
 .docs-article {
   max-width: 760px;
@@ -1410,7 +1446,7 @@ body.docs-page { background: var(--base); }
 }
 .docs-eyebrow {
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--cobalt-2);
@@ -1530,7 +1566,7 @@ body.docs-page { background: var(--base); }
   background: var(--surface);
   color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   letter-spacing: 0.10em;
   text-transform: uppercase;
   font-weight: 500;
@@ -1575,7 +1611,7 @@ body.sponsors-page { background: var(--base); }
   background: var(--elevated);
   color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 500;
@@ -1620,7 +1656,7 @@ body.sponsors-page { background: var(--base); }
 }
 .sp-track {
   font-family: var(--mono);
-  font-size: 0.74rem;
+  font-size: 0.86rem;
   color: var(--text-faint);
   white-space: nowrap;
 }
