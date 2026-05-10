@@ -329,6 +329,16 @@ export async function mountAnalytics(container: HTMLElement): Promise<void> {
   const goldrushKey = (import.meta.env.VITE_GOLDRUSH_KEY as string | undefined)?.trim();
   const birdeyeKey = (import.meta.env.VITE_BIRDEYE_KEY as string | undefined)?.trim();
 
+  // No mainnet mint configured -> hide the entire section. A "configure me"
+  // placeholder on a devnet demo is dead UI weight and confuses judges who
+  // are just clicking through the 5 stations above.
+  if (!mint) {
+    container.style.display = "none";
+    return;
+  }
+
+  container.style.removeProperty("display");
+
   // Section header
   const head = document.createElement("header");
   head.className = "analytics-head";
@@ -338,23 +348,9 @@ export async function mountAnalytics(container: HTMLElement): Promise<void> {
   head.appendChild(title);
   const sub = document.createElement("p");
   sub.className = "analytics-sub";
-  if (mint) {
-    sub.textContent = `Mainnet mint ${shortAddr(mint)} — three independent indexers reading the same on-chain state.`;
-  } else {
-    sub.textContent =
-      "Activates the moment a mainnet MetaHook mint is configured. Three independent indexers — GoldRush, Birdeye, Dune — read the same on-chain state.";
-  }
+  sub.textContent = `Mainnet mint ${shortAddr(mint)} — three independent indexers reading the same on-chain state.`;
   head.appendChild(sub);
   container.appendChild(head);
-
-  if (!mint) {
-    const note = document.createElement("p");
-    note.className = "analytics-state analytics-state-placeholder";
-    note.textContent =
-      "Set VITE_MAINNET_MINT in app/.env (the Token-2022 mint protected by your mainnet MetaHook deployment) to activate the panels below.";
-    container.appendChild(note);
-    return;
-  }
 
   const grid = document.createElement("div");
   grid.className = "analytics-grid";

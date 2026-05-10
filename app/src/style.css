@@ -183,6 +183,7 @@ body {
   color: var(--text);
   cursor: pointer;
   min-height: 44px;
+  text-decoration: none;
   transition: transform 80ms cubic-bezier(0.23, 1, 0.32, 1),
               border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
               background 160ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -190,6 +191,7 @@ body {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   letter-spacing: -0.01em;
 }
+a.btn, a.btn:hover, a.btn:focus, a.btn:visited { text-decoration: none; }
 .btn:hover {
   border-color: var(--cobalt);
   background: var(--overlay);
@@ -201,7 +203,7 @@ body {
   box-shadow: 0 0 0 3px rgba(59, 102, 255, 0.40);
 }
 .btn:disabled {
-  opacity: 0.42;
+  opacity: 0.55;
   cursor: not-allowed;
   border-color: var(--line);
 }
@@ -488,14 +490,19 @@ main {
 .pipeline-svg .stamp-3 { animation: verdictFlash 2.4s ease-in-out 2.4s infinite; }
 .pipeline-svg .pulse-token { animation: pulseFade 4.5s ease-in-out 1.8s infinite; }
 
-/* ============================ STATIONS ================================ */
+/* ============================ STATIONS ================================
+   5 stations: render as 5-col on wide screens so the optional Umbra step
+   sits in the same row as the core 4 (no orphan card on row 2). */
 .stations {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
   margin-bottom: 64px;
 }
-@media (max-width: 980px) {
+@media (max-width: 1280px) {
+  .stations { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 880px) {
   .stations { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) {
@@ -1259,17 +1266,20 @@ footer a:hover { text-decoration: underline; }
   margin-top: 4px;
 }
 
-/* depth strip (compact sponsor row on landing) */
+/* depth strip (compact sponsor row on landing) — 4-col grid so 8 sponsors render
+   as a clean 2x4 block instead of leaving a void in row 3 of a 3-col grid. */
 .depth-strip {
   margin-top: 28px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--line);
   overflow: hidden;
 }
+@media (max-width: 1100px) { .depth-strip { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .depth-strip { grid-template-columns: 1fr; } }
 .depth-cell {
   display: grid;
   grid-template-columns: 1fr auto;
