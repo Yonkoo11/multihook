@@ -56,8 +56,18 @@ rationale:
   - P3 live-CU updating as state advances applies the wizard energy without rebuilding the page as an editor
   - P2 full + P3 full both rejected for build-time reasons in remaining session window
 
-## Phase 4: in_progress
-production restyle of working app/src/{style.css, index.html, main.ts where needed}; preserve all integration code (audit-feed, SIWS, multi-RPC, Umbra, analytics) unchanged
+## Phase 4: completed (2026-05-10)
+audit_result: pass
+issues_fixed: 4 (button underlines, depth-strip 4-col, stations 5-col, devnet-analytics hide), then second-pass: typography hard gate (37 sub-12px sizes bumped), AI slop (subtitle rewrite + asymmetric solution-cards), liveness (amber accent opacities bumped above 0.10 floor)
 
-## Phase 5: pending
-final QA gates after v2 build lands
+## Phase 5: completed (2026-05-10) — APPROVED
+qa_result: APPROVED
+
+Hard gate results:
+- GATE 1 (min font size): PASS — 0 sub-12px violations
+- GATE 2 (AI slop checklist): PASS — 0 strong hits / 2 borderline (color-coded H1 word, 4-stat grid; both intentional + product-specific)
+- GATE 3 (most-used font size): PASS — 0.78rem (12.5px) on tracked uppercase labels, allowed minimum
+- GATE 4 (micro-interactions): PASS — 4 hover states, 20 cubic-bezier(0.23,1,0.32,1) usages, 0 ease-in transitions, :active scale + :focus-visible present
+- GATE 5 (liveness): PASS — 10 radial-gradient layers, noise opacity 0.04, 11 CSS animations, 6 cobalt box-shadow glows, prefers-reduced-motion respected
+
+Design ready to ship. Live: https://yonkoo11.github.io/multihook/
