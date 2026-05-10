@@ -66,12 +66,46 @@ Public Goods judges weight: open-source license, broad applicability, no rent ex
 
 ---
 
+## Shipped status (rolling, last update 2026-05-10)
+
+### P0 — landed in commit fe317e0
+- ✅ **LICENSE (MIT)** at repo root — Public Goods own-goal fixed
+- ✅ **README.md** judge-ready — one-line problem, product paragraph, 60-sec demo flow, architecture diagram, sponsor depth table, technical disclosure, memorable takeaway
+- ✅ **POLICY_INTERFACE.md** — public spec for third-party child policies, with reference table + 6 suggested-but-unbuilt policy ideas for contributors
+- ✅ **Helius RPC integration (depth 0 → 3)** — DEMO_RPC resolves to Helius devnet when VITE_HELIUS_KEY env-var is set at build time, falls back to public devnet otherwise; active provider surfaced in footer
+- ✅ **GoldRush triage logged** — explicit SKIP decision recorded
+
+### Helius — final action needed by user
+The integration code ships with a fallback to public devnet, so the build is
+green even without a key. To activate Helius (target depth 3):
+1. Sign up at helius.dev (free tier)
+2. Generate a devnet key
+3. In Helius dashboard, gate the key to `yonkoo11.github.io` referrer
+4. Add `VITE_HELIUS_KEY=<key>` to `app/.env` (already gitignored)
+5. `cd app && npm run build` — footer will show "Helius RPC"
+6. Commit + push docs/
+
+The key MUST be domain-restricted in Helius's dashboard before going public — any client-side key is a billing-attack surface otherwise.
+
+### P1 — queued, not yet landed
+- ⏳ **Phantom signMessage on receipts** (Phantom 2/5 → 3/5) — sign the audit-event base64 with the issuer wallet, display "issuer-signed receipt" below the stamped receipt. ~2 hours.
+- ⏳ **Helius getEnhancedTransactions audit feed** (Helius 3/5 → 4/5) — render last 5 transfers on the user's mint with verdicts decoded via Helius parsed-tx endpoint, below the receipt. ~3 hours.
+- ⏳ **3rd reference policy: policy-balance-cap** (Public Goods proof) — fork policy-allowlist, replace `is_allowed` check with per-recipient amount cap per epoch. ~3 hours.
+
+### P2 — stretch, judge by remaining time
+- ⏳ Sign-In With Solana session (Phantom 3/5 → 4/5)
+- ⏳ Phantom mobile deeplink button (Phantom 4/5 → 4.5/5)
+- ⏳ @solana/wallet-adapter-phantom swap (cosmetic; debatable depth bump for the bundle-size cost)
+- ⏳ Squads multisig pattern doc (Squads 0/5 → 2/5)
+
 ## Pre-submission verification (Phase 4.5 self-audit, run 48h before deadline)
 
 | Sponsor | Target | Actual | Evidence (URL or file:line) | Gap |
 |---|---|---|---|---|
-| Phantom | 4 | _TBD_ | _TBD_ | _TBD_ |
-| Helius  | 3 | _TBD_ | _TBD_ | _TBD_ |
-| Squads  | 2 | _TBD_ | _TBD_ | _TBD_ |
+| Phantom | 4 | 2 | `app/src/wallet.ts` raw `window.solana` | -2: signMessage receipts + SIWS still queued |
+| Helius  | 3 | 3* | `app/src/programs.ts:DEMO_RPC` env-gated | *Conditional: requires user to set VITE_HELIUS_KEY before submission build |
+| Squads  | 2 | 0 | none | -2: pattern doc not written |
 
 Hard gate: if Phantom or Helius drops below 3, EITHER ship the missing wins by killing a polish task, OR drop the affected track from the submission. Honest depth > inflated track count.
+
+For the 48h-before-deadline check: re-grep the live site for evidence of each sponsor surface, run the demo end-to-end via real Phantom (not just the mock), and update this table with file:line citations.
