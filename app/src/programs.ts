@@ -21,38 +21,54 @@ export const POLICY_SANCTIONS_ID = new PublicKey(
 );
 
 // RPC endpoint resolution. Multi-provider priority for resilience:
-//   1. QuickNode (if VITE_QUICKNODE_DEVNET is set)  — primary
-//   2. Helius   (if VITE_HELIUS_KEY is set)         — fallback
-//   3. Public devnet                                — last resort
+//   1. RPC Fast  (if VITE_RPCFAST_DEVNET is set)    — primary
+//   2. QuickNode (if VITE_QUICKNODE_DEVNET is set)  — secondary
+//   3. Helius    (if VITE_HELIUS_KEY is set)        — fallback
+//   4. Public devnet                                — last resort
 //
-// All three keys are plumbed via Vite env vars at build time so they can
-// be domain-restricted in their respective dashboards rather than embedded
+// All keys plumbed via Vite env vars at build time so they can be
+// domain-restricted in their respective dashboards rather than embedded
 // as long-lived secrets.
 //
 // Why multi-provider: the original public-devnet RPC was rate-limiting tx
 // simulation hard enough that Phantom's Confirm button couldn't enable in
 // our puppeteer tests. Single-provider failure mode is the worst possible
-// for a live demo — judges hitting a 429 see a frozen UI. Two paid-tier
+// for a live demo — judges hitting a 429 see a frozen UI. Three paid-tier
 // providers + a public-devnet floor reduces that to a non-event.
+//
+// Priority order matches sponsor commitment: RPC Fast and QuickNode are
+// each a Frontier sidetrack ($10K + $20K respectively) — using them first
+// honours the integration. Helius keeps the depth-3 sponsor slot it
+// already had via the audit-feed integration.
 //
 // Vite static substitution requires the literal `import.meta.env.VITE_*`
 // form (no optional chain).
+const RPCFAST_URL = (import.meta.env.VITE_RPCFAST_DEVNET as string | undefined) ?? "";
 const QUICKNODE_URL = (import.meta.env.VITE_QUICKNODE_DEVNET as string | undefined) ?? "";
 const HELIUS_KEY = (import.meta.env.VITE_HELIUS_KEY as string | undefined) ?? "";
 
-export const DEMO_RPC: string = QUICKNODE_URL
+export const DEMO_RPC: string = RPCFAST_URL
+  ? RPCFAST_URL
+  : QUICKNODE_URL
   ? QUICKNODE_URL
   : HELIUS_KEY
   ? `https://devnet.helius-rpc.com/?api-key=${HELIUS_KEY}`
   : "https://api.devnet.solana.com";
 
-export const RPC_PROVIDER: "quicknode" | "helius" | "public" = QUICKNODE_URL
+export const RPC_PROVIDER:
+  | "rpcfast"
+  | "quicknode"
+  | "helius"
+  | "public" = RPCFAST_URL
+  ? "rpcfast"
+  : QUICKNODE_URL
   ? "quicknode"
   : HELIUS_KEY
   ? "helius"
   : "public";
 
 export const RPC_FALLBACKS: string[] = [
+  RPCFAST_URL,
   QUICKNODE_URL,
   HELIUS_KEY ? `https://devnet.helius-rpc.com/?api-key=${HELIUS_KEY}` : "",
   "https://api.devnet.solana.com",

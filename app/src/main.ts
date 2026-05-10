@@ -40,6 +40,10 @@ import {
   issuerSignIn,
   loadSession,
 } from "./siws";
+// NOTE: umbra-shield is loaded dynamically inside onUmbraShield() — the
+// Umbra SDK pulls in ~2 MB of MPC + Arcium + indexer client deps that
+// would otherwise bloat the initial page load for a feature only ~10%
+// of demo users will actually exercise.
 
 interface UI {
   walletStatus: HTMLElement;
@@ -48,11 +52,13 @@ interface UI {
   transferFailBtn: HTMLButtonElement;
   addAllowBtn: HTMLButtonElement;
   transferOkBtn: HTMLButtonElement;
+  umbraShieldBtn: HTMLButtonElement;
   resetBtn: HTMLButtonElement;
   provisionLog: HTMLElement;
   transferFailLog: HTMLElement;
   addAllowLog: HTMLElement;
   transferOkLog: HTMLElement;
+  umbraShieldLog: HTMLElement;
   auditEventBox: HTMLElement;
   auditEventTable: HTMLElement;
   auditReceiptId: HTMLElement;
@@ -71,11 +77,13 @@ const ui: UI = {
   transferFailBtn: document.getElementById("transferFailBtn") as HTMLButtonElement,
   addAllowBtn: document.getElementById("addAllowBtn") as HTMLButtonElement,
   transferOkBtn: document.getElementById("transferOkBtn") as HTMLButtonElement,
+  umbraShieldBtn: document.getElementById("umbraShieldBtn") as HTMLButtonElement,
   resetBtn: document.getElementById("resetBtn") as HTMLButtonElement,
   provisionLog: document.getElementById("provisionLog")!,
   transferFailLog: document.getElementById("transferFailLog")!,
   addAllowLog: document.getElementById("addAllowLog")!,
   transferOkLog: document.getElementById("transferOkLog")!,
+  umbraShieldLog: document.getElementById("umbraShieldLog")!,
   auditEventBox: document.getElementById("auditEventBox")!,
   auditEventTable: document.getElementById("auditEventTable")!,
   auditReceiptId: document.getElementById("auditReceiptId")!,
@@ -184,6 +192,7 @@ function refreshButtons() {
     ui.transferFailBtn.disabled = true;
     ui.addAllowBtn.disabled = true;
     ui.transferOkBtn.disabled = true;
+    if (ui.umbraShieldBtn) ui.umbraShieldBtn.disabled = true;
     activateStep(0);
     return;
   }
@@ -193,9 +202,12 @@ function refreshButtons() {
     ui.transferFailBtn.disabled = true;
     ui.addAllowBtn.disabled = true;
     ui.transferOkBtn.disabled = true;
+    if (ui.umbraShieldBtn) ui.umbraShieldBtn.disabled = true;
     return;
   }
   ui.transferFailBtn.disabled = false;
+  // Umbra-shield needs a provisioned mint with balance left in the source ATA.
+  if (ui.umbraShieldBtn) ui.umbraShieldBtn.disabled = false;
   if (!state.allowlisted) {
     activateStep(state.succeeded ? 4 : 2);
     ui.addAllowBtn.disabled = false;
@@ -620,6 +632,42 @@ async function onTransferOk() {
   }
 }
 
+async function onUmbraShield() {
+  if (!programs || !wallet || !state?.provisioned) return;
+  clearLog(ui.umbraShieldLog);
+  const log = makeLogger(ui.umbraShieldLog);
+  setBusy(ui.umbraShieldBtn, true, "Loading Umbra SDK…");
+  try {
+    // Dynamic import so the ~2 MB Umbra SDK chunk only downloads when
+    // a user actually triggers a shield. Initial page load stays lean.
+    const mod = await import("./umbra-shield");
+    setBusy(ui.umbraShieldBtn, true, "Shielding…");
+    const mint = mintKp(state).publicKey;
+    log(`composing Umbra shield for ${mint.toBase58().slice(0, 8)}…`, "info");
+    const result = await mod.shieldViaUmbra({
+      mintBase58: mint.toBase58(),
+      recipientBase58: wallet.publicKey.toBase58(),
+      amountTokens: 100n,
+      rpcUrl: DEMO_RPC,
+    });
+    log(`shield tx: ${result.signature.slice(0, 12)}…`, "ok",
+        `https://solscan.io/tx/${result.signature}?cluster=devnet`);
+    log(`100 tokens shielded — balance now hidden in Umbra encrypted account`, "ok");
+  } catch (e: any) {
+    const msg = e?.message ?? String(e);
+    if (/policy\.allowlist\.fail/i.test(msg)) {
+      log("MetaHook rejected the shield: Umbra's program PDA isn't on your allowlist.", "warn");
+      log("This is the composability story — compliance fired BEFORE the privacy layer.", "dim");
+      log("Add Umbra's program PDA to your allowlist to enable shielded compliant transfers.", "dim");
+    } else {
+      log(`shield failed: ${msg}`, "bad");
+    }
+  } finally {
+    setBusy(ui.umbraShieldBtn, false);
+    refreshAuditFeed().catch(() => {});
+  }
+}
+
 function onReset() {
   if (!wallet) return;
   if (!confirm("Reset demo state? Your mint + dest keys will be regenerated.")) return;
@@ -642,15 +690,17 @@ async function init() {
 
   // Surface the active RPC provider in the footer so judges (and ourselves
   // during demos) can see which path is in use without opening devtools.
-  // Multi-provider priority: QuickNode > Helius > public devnet.
+  // Multi-provider priority: RPC Fast > QuickNode > Helius > public devnet.
   const footer = document.getElementById("footerStack");
   if (footer) {
     const rpcLabel =
-      RPC_PROVIDER === "quicknode"
+      RPC_PROVIDER === "rpcfast"
+        ? "RPC Fast (QuickNode + Helius + public devnet on standby)"
+        : RPC_PROVIDER === "quicknode"
         ? "QuickNode RPC (Helius + public devnet on standby)"
         : RPC_PROVIDER === "helius"
         ? "Helius RPC (public devnet on standby)"
-        : "public devnet RPC (set VITE_QUICKNODE_DEVNET or VITE_HELIUS_KEY for higher tier)";
+        : "public devnet RPC (set VITE_RPCFAST_DEVNET, VITE_QUICKNODE_DEVNET, or VITE_HELIUS_KEY for higher tier)";
     footer.textContent = `Anchor v0.32.1 · Token-2022 · Solana devnet · ${rpcLabel}`;
   }
 
@@ -659,6 +709,7 @@ async function init() {
   ui.transferFailBtn.onclick = onTransferFail;
   ui.addAllowBtn.onclick = onAddAllow;
   ui.transferOkBtn.onclick = onTransferOk;
+  if (ui.umbraShieldBtn) ui.umbraShieldBtn.onclick = onUmbraShield;
   ui.resetBtn.onclick = onReset;
   refreshIdsTable();
 

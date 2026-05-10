@@ -289,6 +289,17 @@ main { max-width: 1180px; margin: 0 auto; padding: 60px 36px 96px; position: rel
   border-color: rgba(245,166,35,0.18);
 }
 .station-success { background: linear-gradient(180deg, var(--paper-3), var(--paper-2)); }
+
+/* Optional / V2 station — dashed outline + ledger-blue accent. Visually
+   parks it adjacent to the main 4-station flow without competing for
+   primary attention. */
+.station-optional {
+  border-style: dashed;
+  border-color: rgba(91, 141, 239, 0.34);
+  background: linear-gradient(180deg, rgba(91, 141, 239, 0.04), rgba(91, 141, 239, 0.01));
+}
+.station-optional::before { background: var(--ledger); }
+.station-optional .station-num { color: var(--ledger); }
 .station.active {
   box-shadow: 0 0 30px rgba(245,166,35,0.10);
   border-color: rgba(245,166,35,0.30);

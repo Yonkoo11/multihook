@@ -11,12 +11,15 @@ interface ImportMetaEnv {
 
   /**
    * Optional QuickNode Solana devnet endpoint URL (full URL — QuickNode
-   * endpoints have unique per-account hashes, not just keys). When set,
-   * QuickNode takes priority over Helius for resilience: the dApp uses
-   * QuickNode primary, Helius fallback, public devnet last-resort.
-   * Single-provider failure no longer takes the demo down.
+   * endpoints have unique per-account hashes, not just keys).
    */
   readonly VITE_QUICKNODE_DEVNET?: string;
+
+  /**
+   * Optional RPC Fast Solana devnet endpoint URL (Dysnix-operated bare-metal
+   * Solana infra). Same shape as QuickNode — a full provider URL.
+   */
+  readonly VITE_RPCFAST_DEVNET?: string;
 
   /**
    * Optional mainnet Token-2022 mint address protected by MetaHook. When
