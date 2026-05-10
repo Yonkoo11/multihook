@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Policy Interface · MetaHook Docs</title>
+    <meta name="description" content="Public interface spec for shipping a MetaHook child policy. check_transfer signature, account context, error format, PDA convention, ExtraAccountMetaList wiring." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='14' fill='%230e1119' stroke='%233b66ff' stroke-width='6'/><text x='50' y='65' text-anchor='middle' font-family='ui-monospace,Menlo,monospace' font-size='52' font-weight='600' fill='%233b66ff'>M</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body class="docs-page">
+    <div id="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand" href="../../">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-name">MetaHook<small>devnet</small></span>
+      </a>
+      <nav class="topnav" aria-label="Primary">
+        <a href="../../" class="topnav-link">Home</a>
+        <a href="../../demo/" class="topnav-link">Demo</a>
+        <a href="../policies/" class="topnav-link is-active" aria-current="page">Docs</a>
+        <a href="../../sponsors/" class="topnav-link">Sponsors</a>
+        <a href="https://github.com/Yonkoo11/multihook" target="_blank" rel="noopener" class="topnav-link topnav-link-ext">GitHub ↗</a>
+      </nav>
+      <a href="../../demo/" class="btn btn-primary topbar-cta">Open the demo →</a>
+    </header>
+
+    <main class="docs-main">
+      <aside class="docs-sidebar" aria-label="Document navigation">
+        <p class="docs-sidebar-eyebrow">MetaHook Docs</p>
+        <ul class="docs-sidebar-links">
+          <li><a href="../policies/" class="docs-side-link is-active" aria-current="page">Policy interface</a></li>
+          <li><a href="../governance/" class="docs-side-link">Policy authority</a></li>
+        </ul>
+        <p class="docs-sidebar-eyebrow docs-sidebar-eyebrow-2">On this page</p>
+        <ul class="docs-sidebar-toc">
+          <li><a href="#tldr">TL;DR</a></li>
+          <li><a href="#instruction">Required instruction</a></li>
+          <li><a href="#account-context">Account context</a></li>
+          <li><a href="#verdict">Returning a verdict</a></li>
+          <li><a href="#pda">PDA convention</a></li>
+          <li><a href="#authority">Authority instructions</a></li>
+          <li><a href="#wiring">Wiring into a deployment</a></li>
+          <li><a href="#references">Reference implementations</a></li>
+          <li><a href="#cu">Compute budget</a></li>
+          <li><a href="#composability">Composability gotchas</a></li>
+          <li><a href="#checklist">Submission checklist</a></li>
+          <li><a href="#ideas">Policy ideas worth shipping</a></li>
+        </ul>
+      </aside>
+
+      <article class="docs-article">
+        <p class="docs-eyebrow">Specification · v1</p>
+        <h1 class="docs-h1">Policy Interface</h1>
+        <p class="docs-lede">
+          Multi-Hook is a meta-hook. The MetaHook program doesn't decide whether a
+          transfer is allowed — it delegates to N child policy programs and aggregates
+          their verdicts. <strong>Anyone can ship a child policy.</strong> This is the
+          public spec for that interface.
+        </p>
+        <p class="docs-body">
+          This is what makes Multi-Hook a public good vs a one-off demo: you can fork
+          a child policy template, swap the rule, deploy, and have an existing
+          meta-hook compose it without touching the hook code.
+        </p>
+
+        <h2 id="tldr" class="docs-h2">TL;DR</h2>
+        <p class="docs-body">
+          Your child policy is a Solana program with a single
+          <code>check_transfer</code> instruction. MetaHook calls it via CPI for every
+          transfer. Returning <code>Ok</code> means "approve from my perspective";
+          returning <code>Err(YourError)</code> with the revert string
+          <code>"policy.&lt;your_name&gt;.fail: &lt;human_reason&gt;"</code>
+          means "block".
+        </p>
+        <p class="docs-body">
+          The MetaHook AND-aggregates verdicts in V1. V2 adds OR / weighted modes.
+        </p>
+
+        <h2 id="instruction" class="docs-h2">Required instruction: <code>check_transfer</code></h2>
+        <h3 class="docs-h3">Signature</h3>
+        <pre class="docs-code"><code>pub fn check_transfer(
+    ctx: Context&lt;CheckTransfer&gt;,
+    amount: u64,
+) -&gt; Result&lt;()&gt; {
+    // Your rule here. Read source/dest/amount, decide, return Ok or Err.
+}</code></pre>
+
+        <h3 id="account-context" class="docs-h3">Account context</h3>
+        <p class="docs-body">
+          The MetaHook hands your program these accounts in this order via CPI:
+        </p>
+        <table class="docs-table">
+          <thead>
+            <tr><th>Index</th><th>Account</th><th>Meaning</th><th>Mut/Sign</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>0</td><td><code>source</code></td><td>Source ATA (TokenAccount, Token-2022 program)</td><td>read</td></tr>
+            <tr><td>1</td><td><code>mint</code></td><td>The Token-2022 mint being transferred</td><td>read</td></tr>
+            <tr><td>2</td><td><code>destination</code></td><td>Destination ATA (TokenAccount, Token-2022 program)</td><td>read</td></tr>
+            <tr><td>3</td><td><code>owner</code></td><td>Source ATA's owner (who initiated the transfer)</td><td>read</td></tr>
+            <tr><td>4</td><td><code>your_pda</code></td><td>YOUR policy state PDA</td><td>read or read-write</td></tr>
+          </tbody>
+        </table>
+        <p class="docs-body">
+          You are free to add MORE accounts after index 4 — but you must register them
+          in your policy's published "extra accounts" list so MetaHook integrators
+          know to forward them when they wire your policy into their meta-hook config.
+        </p>
+
+        <h3 id="verdict" class="docs-h3">Returning a verdict</h3>
+        <p class="docs-body">
+          <strong>Approve:</strong> <code>Ok(())</code>. The MetaHook proceeds to the next policy in the chain.
+        </p>
+        <p class="docs-body">
+          <strong>Block:</strong> Return an <code>AnchorError</code> whose <code>msg</code> follows the format:
+        </p>
+        <pre class="docs-code"><code>policy.&lt;your_policy_name&gt;.fail: &lt;human-readable reason&gt;</code></pre>
+        <p class="docs-body">Examples used by the V1 reference policies:</p>
+        <ul class="docs-list">
+          <li><code>policy.allowlist.fail: destination not on allowlist</code></li>
+          <li><code>policy.sanctions.fail: destination is sanctioned</code></li>
+          <li><code>policy.sns_allowlist.fail: domain not on allowlist</code></li>
+        </ul>
+        <p class="docs-body">
+          The <code>policy.&lt;name&gt;.fail:</code> prefix is the load-bearing part. MetaHook clients
+          parse this to surface the failure reason in UI without needing to decode
+          your program's error enum. <strong>Pick a stable <code>&lt;name&gt;</code> and never change it.</strong>
+        </p>
+
+        <h2 id="pda" class="docs-h2">PDA convention</h2>
+        <p class="docs-body">
+          Every child policy's state PDA SHOULD use this seed pattern so MetaHook UIs
+          can derive it without per-policy config:
+        </p>
+        <pre class="docs-code"><code>seeds = [b"&lt;your-policy-name&gt;", authority.key().as_ref()],</code></pre>
+        <p class="docs-body">Examples:</p>
+        <ul class="docs-list">
+          <li><code>[b"allowlist", authority.key().as_ref()]</code></li>
+          <li><code>[b"ofac-list", authority.key().as_ref()]</code></li>
+          <li><code>[b"sns_allowlist", authority.key().as_ref()]</code></li>
+        </ul>
+
+        <h2 id="authority" class="docs-h2">Authority instructions</h2>
+        <p class="docs-body">
+          Most policies need admin instructions to mutate state (add/remove allowed
+          addresses, etc.). Convention:
+        </p>
+        <pre class="docs-code"><code>pub fn initialize(ctx: Context&lt;Init&gt;) -&gt; Result&lt;()&gt; { ... }
+pub fn add_&lt;thing&gt;(ctx: Context&lt;Authed&gt;, item: Pubkey) -&gt; Result&lt;()&gt; { ... }
+pub fn remove_&lt;thing&gt;(ctx: Context&lt;Authed&gt;, item: Pubkey) -&gt; Result&lt;()&gt; { ... }</code></pre>
+        <p class="docs-body">
+          Gate them with Anchor's <code>has_one = authority</code> constraint so only the policy
+          authority can mutate state.
+        </p>
+
+        <h2 id="wiring" class="docs-h2">Wiring into a MetaHook deployment</h2>
+        <p class="docs-body">Once your policy is deployed, an issuer wires it into their meta-hook by:</p>
+        <ol class="docs-list">
+          <li>Including your <strong>program ID</strong> in the MetaHook's <code>ExtraAccountMetaList</code> for their mint</li>
+          <li>Including the <strong>derived PDA</strong> for their authority+your-program in the same list</li>
+          <li>Marking accounts as writable if your policy needs to mutate state per-transfer (most don't — only the reentrancy guard is writable in V1)</li>
+        </ol>
+
+        <h2 id="references" class="docs-h2">Reference policy implementations</h2>
+        <p class="docs-body">Three child policies live in the repo as worked examples:</p>
+        <table class="docs-table">
+          <thead>
+            <tr><th>Path</th><th>Program ID (devnet)</th><th>What it does</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>programs/policy-allowlist/</code></td>
+              <td><a class="inline-link" href="https://solscan.io/account/GJHxobVdfywhTidD9u4EoYPGa9kBQVzEcZ7kDhVZehyn?cluster=devnet" target="_blank" rel="noopener">GJHx…ehyn ↗</a></td>
+              <td>Approve only if destination owner is in allowlist set</td>
+            </tr>
+            <tr>
+              <td><code>programs/policy-sanctions-ofac/</code></td>
+              <td><a class="inline-link" href="https://solscan.io/account/5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt?cluster=devnet" target="_blank" rel="noopener">5iz6…JkWt ↗</a></td>
+              <td>Reject if destination owner is in sanctioned set</td>
+            </tr>
+            <tr>
+              <td><code>programs/policy-sns-allowlist/</code></td>
+              <td><a class="inline-link" href="https://solscan.io/account/4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo?cluster=devnet" target="_blank" rel="noopener">4J57…FuTo ↗</a></td>
+              <td>Approve only if destination owner controls one of the authorised <code>.sol</code> domains via Solana Name Service</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="cu" class="docs-h2">Compute budget</h2>
+        <p class="docs-body">
+          Each child policy CPI costs ~5-20K CU. The current 2-policy V1 demo lands at
+          33,346 CU (16% of the 200K Token-2022 transfer budget). You have headroom
+          for ~6 more policies before bumping into limits. Beyond that, the right
+          move is per-policy gating (skip non-applicable policies) rather than
+          optimizing the policies themselves.
+        </p>
+
+        <h2 id="composability" class="docs-h2">Composability gotchas</h2>
+        <ol class="docs-list">
+          <li><strong>CPI depth ≤ 4.</strong> Token-2022 invokes MetaHook (depth 2) which CPIs into your policy (depth 3). External CPIs from your policy have <strong>1 level of headroom.</strong></li>
+          <li><strong>Reentrancy.</strong> MetaHook holds a reentrancy-guard PDA marked writable. You don't need your own.</li>
+          <li><strong>Confidential transfers.</strong> Token-2022's confidential-transfer extension is incompatible with transfer hooks upstream. You can't compose a confidential-aware policy until that lands.</li>
+        </ol>
+
+        <h2 id="checklist" class="docs-h2">Submission checklist</h2>
+        <ul class="docs-list">
+          <li>Program ID is stable (don't redeploy after issuers depend on it)</li>
+          <li>Error string follows <code>policy.&lt;name&gt;.fail: &lt;reason&gt;</code> format</li>
+          <li>PDA seeds documented and follow <code>[b"&lt;name&gt;", authority]</code> convention</li>
+          <li>Anchor IDL JSON published (so MetaHook UIs can decode + display)</li>
+          <li>Compute budget measured (reported in your README)</li>
+          <li>CPI depth disclosed if your policy itself makes CPIs</li>
+          <li>Test against a MetaHook fork wiring your policy as the third position</li>
+        </ul>
+
+        <h2 id="ideas" class="docs-h2">Policy ideas worth shipping</h2>
+        <p class="docs-body">These are real RWA compliance needs that don't yet have child policies:</p>
+        <ul class="docs-list">
+          <li><strong>policy-balance-cap</strong> — cap per-recipient amount in a rolling time window</li>
+          <li><strong>policy-jurisdiction</strong> — allow/deny based on geo + KYC level attestation</li>
+          <li><strong>policy-time-window</strong> — only allow transfers during issuer-defined hours</li>
+          <li><strong>policy-velocity</strong> — block if total transferred-out in last N minutes exceeds threshold</li>
+          <li><strong>policy-fee-skim</strong> — require a separate fee transfer to a recipient as part of the same tx</li>
+          <li><strong>policy-attestation-vrfd</strong> — require a Verigate / EAS / Sismo attestation be presented in the transaction</li>
+        </ul>
+        <p class="docs-body">
+          If you ship one, open a PR adding it to this doc's reference table.
+        </p>
+      </article>
+    </main>
+
+    <footer>
+      <span>POLICY_INTERFACE · v1 · MIT-licensed</span>
+      <span><a href="https://github.com/Yonkoo11/multihook/blob/master/POLICY_INTERFACE.md" target="_blank" rel="noopener">view source on GitHub ↗</a></span>
+    </footer>
+  </body>
+</html>

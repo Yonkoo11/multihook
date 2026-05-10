@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Policy Authority · MetaHook Docs</title>
+    <meta name="description" content="Production-deployment guide for MetaHook policy authority. Don't single-key your compliance state — wire a Squads multisig instead. 2-of-3 worked example with code." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='14' fill='%230e1119' stroke='%233b66ff' stroke-width='6'/><text x='50' y='65' text-anchor='middle' font-family='ui-monospace,Menlo,monospace' font-size='52' font-weight='600' fill='%233b66ff'>M</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body class="docs-page">
+    <div id="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand" href="../../">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-name">MetaHook<small>devnet</small></span>
+      </a>
+      <nav class="topnav" aria-label="Primary">
+        <a href="../../" class="topnav-link">Home</a>
+        <a href="../../demo/" class="topnav-link">Demo</a>
+        <a href="../policies/" class="topnav-link is-active" aria-current="page">Docs</a>
+        <a href="../../sponsors/" class="topnav-link">Sponsors</a>
+        <a href="https://github.com/Yonkoo11/multihook" target="_blank" rel="noopener" class="topnav-link topnav-link-ext">GitHub ↗</a>
+      </nav>
+      <a href="../../demo/" class="btn btn-primary topbar-cta">Open the demo →</a>
+    </header>
+
+    <main class="docs-main">
+      <aside class="docs-sidebar" aria-label="Document navigation">
+        <p class="docs-sidebar-eyebrow">MetaHook Docs</p>
+        <ul class="docs-sidebar-links">
+          <li><a href="../policies/" class="docs-side-link">Policy interface</a></li>
+          <li><a href="../governance/" class="docs-side-link is-active" aria-current="page">Policy authority</a></li>
+        </ul>
+        <p class="docs-sidebar-eyebrow docs-sidebar-eyebrow-2">On this page</p>
+        <ul class="docs-sidebar-toc">
+          <li><a href="#threat-model">Threat model</a></li>
+          <li><a href="#squads-pattern">Squads pattern (2-of-3)</a></li>
+          <li><a href="#step-1">Step 1 — create the multisig</a></li>
+          <li><a href="#step-2">Step 2 — initialise with vault PDA</a></li>
+          <li><a href="#step-3">Step 3 — every mutation</a></li>
+          <li><a href="#why-depth-2">Why this is depth-2</a></li>
+          <li><a href="#networks">Devnet vs mainnet</a></li>
+          <li><a href="#phase-2">Phase 2 governance</a></li>
+        </ul>
+      </aside>
+
+      <article class="docs-article">
+        <p class="docs-eyebrow">Production guide</p>
+        <h1 class="docs-h1">Don't single-key your compliance state</h1>
+        <p class="docs-lede">
+          Every Multi-Hook child policy stores an <code>authority</code> Pubkey on its
+          state PDA. That key is the only one allowed to mutate the policy: add an
+          allowed address, remove a sanctioned address, raise a balance cap.
+          <strong>In production, that key should never be a single hot wallet.</strong>
+          This doc shows how to wire a
+          <a class="inline-link" href="https://squads.so" target="_blank" rel="noopener">Squads</a>
+          multisig as the policy authority instead.
+        </p>
+        <p class="docs-body">
+          The demo at <a class="inline-link" href="../../demo/">/demo</a> uses a
+          single-key authority because the demo issuer is the same person clicking
+          the buttons. The threat model in production is different.
+        </p>
+
+        <h2 id="threat-model" class="docs-h2">Threat model: why a single-key authority is broken</h2>
+        <p class="docs-body">
+          <code>policy-allowlist::add_allowed</code> and <code>policy-sanctions-ofac::remove_sanctioned</code>
+          take exactly one signer: <code>Allowlist.authority</code>. That key holds three
+          distinct compliance powers:
+        </p>
+        <ol class="docs-list">
+          <li><strong>Allowlist any address.</strong> Compromise this key → instantly authorise transfers to a wallet the issuer has never seen.</li>
+          <li><strong>De-list a sanctioned address.</strong> Compromise → drop an OFAC entry that should have stayed in place. Token can now move to that wallet.</li>
+          <li><strong>Migrate authority.</strong> Compromise → rotate the <code>authority</code> field to an attacker-controlled key. Issuer permanently locked out of their own policy state.</li>
+        </ol>
+        <p class="docs-body">
+          In every reference policy the field is just a <code>Pubkey</code>. There's no
+          governance built into Multi-Hook on purpose — a meta-hook shouldn't
+          prescribe how its consumers manage governance. But unmanaged, that
+          single-key surface is the single biggest non-protocol risk in a real
+          deployment.
+        </p>
+        <p class="docs-body">
+          The fix is upstream: make the <code>authority</code> a Squads multisig vault PDA, so
+          every state mutation is an off-chain proposal that N-of-M signers must
+          approve before it lands.
+        </p>
+
+        <h2 id="squads-pattern" class="docs-h2">Squads pattern (2-of-3 worked example)</h2>
+        <p class="docs-body">Three signers, two required:</p>
+        <ul class="docs-list">
+          <li><strong>Signer A</strong> — issuer's compliance officer (Ledger, cold storage)</li>
+          <li><strong>Signer B</strong> — issuer's CTO (YubiKey-backed Phantom, hot)</li>
+          <li><strong>Signer C</strong> — outside counsel (Ledger, cold storage)</li>
+        </ul>
+        <p class="docs-body">
+          Any two can authorise a state change. Any one acting alone cannot. The
+          <code>Allowlist.authority</code> field stores the <strong>Squads vault PDA</strong>, not any
+          individual signer.
+        </p>
+
+        <h3 id="step-1" class="docs-h3">Step 1 — create the Squads multisig</h3>
+        <pre class="docs-code"><code>import * as multisig from "@sqds/multisig";
+import { Connection, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+
+const conn = new Connection("https://api.devnet.solana.com", "confirmed");
+const creator = Keypair.fromSecretKey(/* … */);
+
+// 1. Generate the multisig PDA from a unique createKey
+const createKey = Keypair.generate();
+const [multisigPda] = multisig.getMultisigPda({ createKey: createKey.publicKey });
+
+// 2. Create the multisig: 3 members, threshold 2, no time lock for the demo
+const ix = await multisig.instructions.multisigCreateV2({
+  createKey: createKey.publicKey,
+  creator: creator.publicKey,
+  multisigPda,
+  configAuthority: null,   // null = immutable; set to a key for upgradable config
+  threshold: 2,
+  members: [
+    { key: SIGNER_A, permissions: multisig.types.Permissions.all() },
+    { key: SIGNER_B, permissions: multisig.types.Permissions.all() },
+    { key: SIGNER_C, permissions: multisig.types.Permissions.all() },
+  ],
+  timeLock: 0,
+  treasury: TREASURY,      // skips a 0.1 SOL fee on devnet for the demo
+  rentCollector: null,
+});
+
+// 3. Derive the vault PDA — THIS is the value you put in Allowlist.authority
+const [vaultPda] = multisig.getVaultPda({ multisigPda, index: 0 });</code></pre>
+
+        <h3 id="step-2" class="docs-h3">Step 2 — initialise the policy with the vault PDA as authority</h3>
+        <p class="docs-body">
+          The trick: the policy's <code>initialize</code> instruction needs the authority
+          to <strong>sign</strong>, but a Squads vault PDA can only sign through a Squads
+          proposal-execute flow. The clean pattern is to:
+        </p>
+        <ol class="docs-list">
+          <li>Create a Squads transaction that wraps the policy's <code>initialize</code> ix</li>
+          <li>Have 2-of-3 signers approve it</li>
+          <li>Execute the transaction → vault PDA signs the inner <code>initialize</code></li>
+        </ol>
+        <pre class="docs-code"><code>// 1. Build the inner instruction — initialize the SNS allowlist with
+//    the vault PDA as authority
+const initIx = await program.methods
+  .initialize()
+  .accountsPartial({
+    authority: vaultPda,                // the multisig vault is the authority
+    allowlist: snsAllowlistPda(vaultPda),
+    systemProgram: SystemProgram.programId,
+  })
+  .instruction();
+
+// 2. Wrap it in a Squads VaultTransaction
+const transactionIndex = 1n;
+const [transactionPda] = multisig.getTransactionPda({ multisigPda, index: transactionIndex });
+
+const wrapIx = await multisig.instructions.vaultTransactionCreate({
+  multisigPda,
+  transactionIndex,
+  creator: creator.publicKey,
+  vaultIndex: 0,
+  ephemeralSigners: 0,
+  transactionMessage: new TransactionMessage({
+    payerKey: vaultPda,
+    recentBlockhash: (await conn.getLatestBlockhash()).blockhash,
+    instructions: [initIx],
+  }),
+});
+
+// 3. Each signer creates their proposal-approval (off-chain coordination
+//    happens in the Squads UI in practice)
+const approveIx_A = await multisig.instructions.proposalApprove({
+  multisigPda, transactionIndex, member: SIGNER_A,
+});
+const approveIx_B = await multisig.instructions.proposalApprove({
+  multisigPda, transactionIndex, member: SIGNER_B,
+});
+
+// 4. Once threshold is met, anyone can execute
+const executeIx = await multisig.instructions.vaultTransactionExecute({
+  multisigPda, transactionIndex, member: SIGNER_A,
+});</code></pre>
+
+        <h3 id="step-3" class="docs-h3">Step 3 — every subsequent <code>add_allowed</code> flows through the same shape</h3>
+        <p class="docs-body">
+          Once the policy is initialised with <code>authority = vaultPda</code>, every future
+          mutation has the same structure: build the policy instruction, wrap it in
+          a Squads <code>vaultTransactionCreate</code>, collect threshold approvals, execute.
+        </p>
+        <pre class="docs-code"><code>const addIx = await program.methods
+  .addAllowed(newAllowedPubkey)
+  .accountsPartial({ authority: vaultPda, allowlist: allowlistPda(vaultPda) })
+  .instruction();
+
+// — wrap, approve, execute — same as Step 2 —</code></pre>
+
+        <h2 id="why-depth-2" class="docs-h2">Why this is depth-2 and not load-bearing in V1</h2>
+        <p class="docs-body">
+          Multi-Hook does not depend on Squads to function. The above pattern is
+          <strong>how a production issuer should configure their <code>authority</code> field</strong>, not
+          something the Multi-Hook program enforces. Issuers can choose:
+        </p>
+        <ul class="docs-list">
+          <li><strong>Single hot wallet</strong> — fastest, riskiest, fine for a hackathon demo</li>
+          <li><strong>Squads 2-of-3</strong> — recommended baseline for any real deployment</li>
+          <li><strong>Squads 3-of-5 with time lock</strong> — stronger; the time lock gives bad proposals a delay window during which honest signers can revoke</li>
+          <li><strong>Anchor multisig + Squads vault</strong> — paranoid; combine two governance primitives</li>
+        </ul>
+
+        <h2 id="networks" class="docs-h2">Devnet vs mainnet</h2>
+        <p class="docs-body">
+          The Squads program is deployed on both. Same program ID
+          (<code>SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf</code>) on both clusters; the
+          TypeScript SDK works identically. For the live MultiHook demo we keep
+          the single-key authority so the demo flow stays a single-click experience;
+          the production wiring above is the same code with one address swap.
+        </p>
+
+        <h2 id="phase-2" class="docs-h2">Suggested governance instructions to add (Phase 2)</h2>
+        <table class="docs-table">
+          <thead>
+            <tr><th>Instruction</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>init_with_governance(squads_multisig_pda)</code></td><td>Initialise policy state binding it to a specific Squads multisig from day one</td></tr>
+            <tr><td><code>transfer_authority(new_authority)</code></td><td>Hand authority to a new key; gated by current authority signer</td></tr>
+            <tr><td><code>freeze_mutations()</code></td><td>Set a flag that blocks all <code>add_*</code>/<code>remove_*</code> for a duration; useful if the issuer suspects a key is compromised and wants to pause while rotating</td></tr>
+          </tbody>
+        </table>
+        <p class="docs-body">
+          V1 ships none of these — the issuer rolls their own via Squads or any
+          other governance program. V2 candidates above.
+        </p>
+      </article>
+    </main>
+
+    <footer>
+      <span>POLICY_AUTHORITY · v1 · MIT-licensed</span>
+      <span><a href="https://github.com/Yonkoo11/multihook/blob/master/POLICY_AUTHORITY.md" target="_blank" rel="noopener">view source on GitHub ↗</a></span>
+    </footer>
+  </body>
+</html>

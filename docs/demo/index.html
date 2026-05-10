@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MetaHook · Composable Token-2022 Compliance</title>
+    <meta name="description" content="OpenZeppelin for Token-2022 transfer-hook compliance. One meta-hook, N composable policy programs, one signed audit receipt per transfer." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='14' fill='%230e1119' stroke='%233b66ff' stroke-width='6'/><text x='50' y='65' text-anchor='middle' font-family='ui-monospace,Menlo,monospace' font-size='52' font-weight='600' fill='%233b66ff'>M</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="../assets/demo-CWcExjta.js"></script>
+    <link rel="stylesheet" crossorigin href="../assets/style-DXYrlX_c.css">
+  </head>
+  <body>
+    <div id="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand" href="../">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-name">MetaHook<small>devnet</small></span>
+      </a>
+      <nav class="topnav" aria-label="Primary">
+        <a href="../" class="topnav-link">Home</a>
+        <a href="./" class="topnav-link is-active" aria-current="page">Demo</a>
+        <a href="../docs/policies/" class="topnav-link">Docs</a>
+        <a href="../sponsors/" class="topnav-link">Sponsors</a>
+        <a href="https://github.com/Yonkoo11/multihook" target="_blank" rel="noopener" class="topnav-link topnav-link-ext">GitHub ↗</a>
+      </nav>
+      <div class="wallet" id="walletStatus">
+        <button id="connectBtn" class="btn btn-primary">Connect Phantom</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- ============================ HERO =================================== -->
+      <section class="hero">
+        <div class="hero-copy">
+          <h1>
+            Compose <em>compliance</em> for any Token-2022 mint.
+          </h1>
+          <p class="lede">
+            One meta-hook. <strong>N</strong> composable child policy programs.
+            Every transfer passes through your allowlist, sanctions check, SNS-domain
+            check, and any policy you bolt on — then receives an on-chain audit
+            receipt with the per-policy verdicts.
+          </p>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span class="label">Programs deployed</span>
+              <span class="value">4</span>
+            </div>
+            <div class="hero-stat">
+              <span class="label">CU per transfer</span>
+              <span class="value">33,346</span>
+            </div>
+            <div class="hero-stat">
+              <span class="label">CPI depth</span>
+              <span class="value">3 / 4</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipeline" aria-label="Animated diagram of the MetaHook composition stack: three policy blocks slot into the meta-hook container, then a transfer pulse passes through each block and emerges with verdict stamps">
+          <svg class="pipeline-svg" viewBox="0 0 640 280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="container" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="rgba(59, 102, 255, 0.16)" />
+                <stop offset="1" stop-color="rgba(59, 102, 255, 0.04)" />
+              </linearGradient>
+              <linearGradient id="block" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#1a1e2c" />
+                <stop offset="1" stop-color="#131724" />
+              </linearGradient>
+            </defs>
+            <!-- MetaHook outer container -->
+            <rect x="20" y="20" width="600" height="170" rx="10"
+                  fill="url(#container)" stroke="#3b66ff" stroke-width="1" stroke-dasharray="4 3" opacity="0.85" />
+            <text x="36" y="42" font-family="Geist Mono, monospace" font-size="11"
+                  fill="#5a82ff" letter-spacing="2">METAHOOK · ORCHESTRATOR</text>
+            <text x="604" y="42" text-anchor="end" font-family="Geist Mono, monospace"
+                  font-size="11" fill="#5d6478" letter-spacing="1">depth 2</text>
+
+            <!-- Policy block 1: ALLOWLIST -->
+            <g class="stack-block-1" transform="translate(60, 70)">
+              <rect width="150" height="100" rx="8" fill="url(#block)" stroke="#3b66ff" stroke-width="1.5"/>
+              <text x="14" y="22" font-family="Geist Mono, monospace" font-size="10"
+                    fill="#5a82ff" letter-spacing="1.5">policy_allowlist</text>
+              <text x="14" y="44" font-family="Geist, sans-serif" font-size="14"
+                    font-weight="600" fill="#e8eaef">Allowlist</text>
+              <text x="14" y="62" font-family="Geist Mono, monospace" font-size="9"
+                    fill="#9aa1b3">depth 3 · 2,168 CU</text>
+              <g class="stamp-1">
+                <circle cx="120" cy="78" r="16" fill="rgba(245,166,35,0.10)"
+                        stroke="#f5a623" stroke-width="1.5" />
+                <text x="120" y="82" text-anchor="middle"
+                      font-family="Geist Mono, monospace" font-size="8"
+                      font-weight="700" fill="#f5a623">PASS</text>
+              </g>
+            </g>
+
+            <!-- Policy block 2: SANCTIONS -->
+            <g class="stack-block-2" transform="translate(245, 70)">
+              <rect width="150" height="100" rx="8" fill="url(#block)" stroke="#3b66ff" stroke-width="1.5"/>
+              <text x="14" y="22" font-family="Geist Mono, monospace" font-size="10"
+                    fill="#5a82ff" letter-spacing="1.5">policy_sanctions</text>
+              <text x="14" y="44" font-family="Geist, sans-serif" font-size="14"
+                    font-weight="600" fill="#e8eaef">OFAC check</text>
+              <text x="14" y="62" font-family="Geist Mono, monospace" font-size="9"
+                    fill="#9aa1b3">depth 3 · 2,114 CU</text>
+              <g class="stamp-2">
+                <circle cx="120" cy="78" r="16" fill="rgba(245,166,35,0.10)"
+                        stroke="#f5a623" stroke-width="1.5" />
+                <text x="120" y="82" text-anchor="middle"
+                      font-family="Geist Mono, monospace" font-size="8"
+                      font-weight="700" fill="#f5a623">PASS</text>
+              </g>
+            </g>
+
+            <!-- Policy block 3: YOUR POLICY (the composability story) -->
+            <g class="stack-block-3" transform="translate(430, 70)">
+              <rect width="150" height="100" rx="8" fill="url(#block)" stroke="#3b66ff"
+                    stroke-width="1.5" stroke-dasharray="3 2" opacity="0.92"/>
+              <text x="14" y="22" font-family="Geist Mono, monospace" font-size="10"
+                    fill="#5a82ff" letter-spacing="1.5">policy_&lt;your_rule&gt;</text>
+              <text x="14" y="44" font-family="Geist, sans-serif" font-size="14"
+                    font-weight="600" fill="#e8eaef">Your policy</text>
+              <text x="14" y="62" font-family="Geist Mono, monospace" font-size="9"
+                    fill="#9aa1b3">~200 lines of Rust</text>
+              <g class="stamp-3">
+                <circle cx="120" cy="78" r="16" fill="rgba(91, 130, 255, 0.10)"
+                        stroke="#5a82ff" stroke-width="1.5" stroke-dasharray="2 2"/>
+                <text x="120" y="82" text-anchor="middle"
+                      font-family="Geist Mono, monospace" font-size="8"
+                      font-weight="700" fill="#5a82ff">SLOT</text>
+              </g>
+            </g>
+
+            <!-- Source / Dest labels -->
+            <text x="20" y="240" font-family="Geist Mono, monospace" font-size="10"
+                  fill="#5d6478" letter-spacing="1.5">SOURCE ATA</text>
+            <text x="620" y="240" text-anchor="end" font-family="Geist Mono, monospace"
+                  font-size="10" fill="#5d6478" letter-spacing="1.5">DEST ATA</text>
+
+            <!-- Path indicator (pulse rail under the blocks) -->
+            <line x1="20" y1="262" x2="620" y2="262"
+                  stroke="rgba(59, 102, 255, 0.25)" stroke-width="0.5"
+                  stroke-dasharray="4 4" />
+
+            <!-- Transfer pulse: 100-token chip travels along the rail through each block.
+                 SMIL animateTransform avoids the CSS-vs-SVG-attribute teleport bug. -->
+            <g class="pulse-token">
+              <rect x="-22" y="-12" width="44" height="22" rx="4"
+                    fill="#f5a623" opacity="0.96" />
+              <text x="0" y="3" text-anchor="middle"
+                    font-family="Geist Mono, monospace" font-size="11"
+                    font-weight="700" fill="#1a1300">100</text>
+              <animateTransform attributeName="transform" type="translate"
+                values="42,262; 135,262; 320,262; 505,262; 600,262"
+                keyTimes="0; 0.18; 0.50; 0.82; 1"
+                dur="6s" repeatCount="indefinite" />
+            </g>
+          </svg>
+          <div class="pipeline-caption">
+            <span>Token-2022.transferChecked</span>
+            <span>N-policy AND aggregation</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ STATIONS =============================== -->
+      <section class="stations" aria-label="Demo flow">
+        <article class="station station-primary" data-step="1">
+          <span class="station-num">01 · Provision</span>
+          <h2 class="station-title">Provision your mint</h2>
+          <p class="station-desc">
+            One signed transaction creates your allowlist PDA, OFAC PDA,
+            Token-2022 mint with TransferHook ext, and the ExtraAccountMetaList.
+          </p>
+          <button id="provisionBtn" class="btn btn-primary" disabled>
+            Provision (1 signature)
+          </button>
+          <div id="provisionLog" class="logbox"></div>
+        </article>
+
+        <article class="station" data-step="2">
+          <span class="station-num">02 · Reject</span>
+          <h2 class="station-title">Send to a stranger</h2>
+          <p class="station-desc">
+            Transfer to a wallet that isn't on your allowlist. The hook should
+            reject with <code>policy.allowlist.fail</code>.
+          </p>
+          <button id="transferFailBtn" class="btn" disabled>
+            Send 100 (expect revert)
+          </button>
+          <div id="transferFailLog" class="logbox"></div>
+        </article>
+
+        <article class="station" data-step="3">
+          <span class="station-num">03 · Authorise</span>
+          <h2 class="station-title">Add to allowlist</h2>
+          <p class="station-desc">
+            Single CPI to <code>add_allowed</code>. The MetaHook program code
+            stays untouched — only the policy state moves.
+          </p>
+          <button id="addAllowBtn" class="btn" disabled>
+            Add to allowlist
+          </button>
+          <div id="addAllowLog" class="logbox"></div>
+        </article>
+
+        <article class="station station-success" data-step="4">
+          <span class="station-num">04 · Approve</span>
+          <h2 class="station-title">Watch the verdict land</h2>
+          <p class="station-desc">
+            Same transfer. Both policies stamp PASS and a
+            <code>MetaHookAuditEvent</code> appears in the tx logs.
+          </p>
+          <button id="transferOkBtn" class="btn btn-primary" disabled>
+            Retry (expect approve)
+          </button>
+          <div id="transferOkLog" class="logbox"></div>
+        </article>
+
+        <article class="station station-optional" data-step="5">
+          <span class="station-num">05 · Optional</span>
+          <h2 class="station-title">Shield via Umbra</h2>
+          <p class="station-desc">
+            Move 100 tokens out of your public ATA into an Arcium-encrypted
+            Umbra account. Compliance is preserved — the shield is itself a
+            transfer, so MetaHook fires and the audit event still lands —
+            but the post-shield balance is hidden from any block explorer.
+          </p>
+          <button id="umbraShieldBtn" class="btn" disabled>
+            Shield 100 via Umbra
+          </button>
+          <div id="umbraShieldLog" class="logbox"></div>
+        </article>
+      </section>
+
+      <!-- ========================== AUDIT RECEIPT =========================== -->
+      <section id="auditEventBox" class="audit hidden" aria-live="polite">
+        <div class="audit-stamp" aria-hidden="true"></div>
+        <h2 class="audit-title">MetaHookAuditEvent</h2>
+        <div id="auditReceiptId" class="audit-receipt-id">RECEIPT</div>
+        <dl id="auditEventTable" class="audit-table"></dl>
+      </section>
+
+      <!-- ========================== AUDIT FEED ============================== -->
+      <section id="auditFeedBox" class="audit-feed hidden" aria-label="Recent audit events on this mint">
+        <div class="audit-feed-head">
+          <h3 class="audit-feed-title">Recent audit events</h3>
+          <span class="audit-feed-source">Helius RPC · decoded MetaHookAuditEvent</span>
+        </div>
+        <p class="audit-feed-sub">
+          Every transfer attempt against your mint, decoded out of the on-chain
+          program logs. Approved entries carry a signed audit event; rejects
+          show the policy that vetoed them.
+        </p>
+        <ol id="auditFeedList" class="audit-feed-list"></ol>
+        <p id="auditFeedEmpty" class="audit-feed-empty hidden">no audit events yet — run a transfer above</p>
+      </section>
+
+      <!-- =========================== LIVE MINT ANALYTICS ==================== -->
+      <section id="analyticsBox" class="analytics-section" aria-label="Live mint analytics across GoldRush, Birdeye, and Dune"></section>
+
+      <!-- =========================== ON-CHAIN REFERENCES ==================== -->
+      <section class="ledger" aria-label="On-chain references">
+        <h3>On-chain references</h3>
+        <table class="ledger-table">
+          <tbody>
+            <tr><td>MetaHook program</td><td><a id="metahookLink" target="_blank" rel="noopener"></a></td></tr>
+            <tr><td>policy_allowlist program</td><td><a id="allowlistLink" target="_blank" rel="noopener"></a></td></tr>
+            <tr><td>policy_sanctions_ofac program</td><td><a id="sanctionsLink" target="_blank" rel="noopener"></a></td></tr>
+            <tr><td>policy_sns_allowlist program</td><td><a target="_blank" rel="noopener" href="https://solscan.io/account/4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo?cluster=devnet">4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo</a></td></tr>
+            <tr><td>Your mint</td><td><a id="mintLink" target="_blank" rel="noopener">— provision first —</a></td></tr>
+            <tr><td>Demo destination wallet</td><td><a id="destLink" target="_blank" rel="noopener">— provision first —</a></td></tr>
+          </tbody>
+        </table>
+        <button id="resetBtn" class="btn btn-ghost">Reset demo state (this wallet)</button>
+      </section>
+    </main>
+
+    <footer>
+      <span id="footerStack">Anchor v0.32.1 · Token-2022 · Solana devnet</span>
+      <span><a href="https://github.com/Yonkoo11/multihook" target="_blank" rel="noopener" id="repoLink">github.com/Yonkoo11/multihook</a></span>
+    </footer>
+
+  </body>
+</html>

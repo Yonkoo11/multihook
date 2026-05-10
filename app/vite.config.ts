@@ -10,6 +10,17 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     target: "es2020",
+    rollupOptions: {
+      input: {
+        // Multi-page Vite — each entry HTML produces its own bundle. URLs
+        // mirror the directory layout: app/demo/index.html → /demo/.
+        main:             resolve(__dirname, "index.html"),
+        demo:             resolve(__dirname, "demo/index.html"),
+        docs_policies:    resolve(__dirname, "docs/policies/index.html"),
+        docs_governance:  resolve(__dirname, "docs/governance/index.html"),
+        sponsors:         resolve(__dirname, "sponsors/index.html"),
+      },
+    },
   },
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),

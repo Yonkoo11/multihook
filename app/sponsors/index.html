@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sponsor depth audit · MetaHook</title>
+    <meta name="description" content="MetaHook integrates with Phantom, Helius, QuickNode, RPC Fast, SNS, Umbra, and Squads. Each integration is audited against a public depth scale — honestly." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='14' fill='%230e1119' stroke='%233b66ff' stroke-width='6'/><text x='50' y='65' text-anchor='middle' font-family='ui-monospace,Menlo,monospace' font-size='52' font-weight='600' fill='%233b66ff'>M</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body class="sponsors-page">
+    <div id="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand" href="../">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-name">MetaHook<small>devnet</small></span>
+      </a>
+      <nav class="topnav" aria-label="Primary">
+        <a href="../" class="topnav-link">Home</a>
+        <a href="../demo/" class="topnav-link">Demo</a>
+        <a href="../docs/policies/" class="topnav-link">Docs</a>
+        <a href="./" class="topnav-link is-active" aria-current="page">Sponsors</a>
+        <a href="https://github.com/Yonkoo11/multihook" target="_blank" rel="noopener" class="topnav-link topnav-link-ext">GitHub ↗</a>
+      </nav>
+      <a href="../demo/" class="btn btn-primary topbar-cta">Open the demo →</a>
+    </header>
+
+    <main class="sponsors-main">
+      <section class="sponsors-head">
+        <p class="docs-eyebrow">Public goods commitment</p>
+        <h1 class="docs-h1">Sponsor depth audit — honestly scored</h1>
+        <p class="docs-lede">
+          Every integration claim has a file:line reference and a depth tier on a
+          public 0-5 scale. We score ourselves the same way an outside auditor
+          would. Tracks where we couldn't honestly hit depth 3 are <strong>marked
+          DROPPED</strong> rather than name-dropped.
+        </p>
+        <p class="docs-body">
+          Depth scale: 0 = not used · 1 = name-drop only · 2 = wallet/auth-level use ·
+          <strong>3 = one non-trivial SDK/API call (the floor for an honest claim)</strong> ·
+          4 = two+ surface areas integrated, demoable · 5 = load-bearing, remove it
+          and the demo breaks.
+        </p>
+      </section>
+
+      <section class="sponsors-table-wrap">
+        <table class="sponsors-table">
+          <thead>
+            <tr>
+              <th>Sponsor</th>
+              <th>Tier</th>
+              <th>Evidence</th>
+              <th>Track</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="sp-name">Phantom</td>
+              <td class="sp-tier sp-tier-4">4 / 5</td>
+              <td class="sp-ev">
+                Connect + bundled signTransaction + signMessage on every successful transfer (issuer-signed receipt) + SIWS session via wallet-standard <code>solana:signIn</code>. <code>app/src/wallet.ts</code>, <code>app/src/demo.ts</code>, <code>app/src/siws.ts</code>.
+              </td>
+              <td class="sp-track">Standout · Public Goods</td>
+            </tr>
+            <tr>
+              <td class="sp-name">Helius</td>
+              <td class="sp-tier sp-tier-4">4 / 5</td>
+              <td class="sp-ev">
+                Multi-RPC priority chain primary tier; built bundle inlines <code>helius-rpc.com</code>; audit-feed renders last 10 transfers via <code>getSignaturesForAddress + getTransaction + decodeAuditEvent</code>. <code>app/src/audit-feed.ts</code>, <code>app/src/programs.ts</code>.
+              </td>
+              <td class="sp-track">Public Goods · Standout</td>
+            </tr>
+            <tr>
+              <td class="sp-name">QuickNode</td>
+              <td class="sp-tier sp-tier-3">3 / 5</td>
+              <td class="sp-ev">
+                Multi-RPC priority chain — secondary tier (RPC Fast → QuickNode → Helius → public devnet). Footer surfaces active provider. Single-RPC outage no longer freezes the demo.
+              </td>
+              <td class="sp-track">Eitherway $20K (QuickNode angle)</td>
+            </tr>
+            <tr>
+              <td class="sp-name">RPC Fast</td>
+              <td class="sp-tier sp-tier-3">3 / 5</td>
+              <td class="sp-ev">
+                Multi-RPC priority chain — primary tier when configured. <code>VITE_RPCFAST_DEVNET</code> env-gated. Footer label adapts.
+              </td>
+              <td class="sp-track">RPC Fast $10K</td>
+            </tr>
+            <tr>
+              <td class="sp-name">SNS · Bonfida</td>
+              <td class="sp-tier sp-tier-3">3 / 5</td>
+              <td class="sp-ev">
+                Third reference policy <code>policy-sns-allowlist</code> deployed devnet at <a class="inline-link" href="https://solscan.io/account/4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo?cluster=devnet" target="_blank" rel="noopener">4J57…FuTo ↗</a>. 3-guard <code>check_transfer</code>: account-ownership against canonical Bonfida ID + allowlist membership + NameRecord owner equality (defeats historical-control replays).
+              </td>
+              <td class="sp-track">SNS Identity $5K</td>
+            </tr>
+            <tr>
+              <td class="sp-name">Umbra</td>
+              <td class="sp-tier sp-tier-3">3 / 5</td>
+              <td class="sp-ev">
+                Step 05 station "Shield via Umbra" with dynamic-import (~2 MB Umbra SDK chunk only loads on click; main bundle stays 500 KB). Calls <code>getPublicBalanceToEncryptedBalanceDirectDepositorFunction</code>. The composability story: compliance fires BEFORE privacy.
+              </td>
+              <td class="sp-track">Build with Umbra $10K</td>
+            </tr>
+            <tr>
+              <td class="sp-name">Squads</td>
+              <td class="sp-tier sp-tier-2">2 / 5</td>
+              <td class="sp-ev">
+                Production policy-authority guide at <a class="inline-link" href="../docs/governance/">/docs/governance</a>: 2-of-3 worked example with <code>multisigCreateV2</code> + <code>vaultTransactionCreate</code> + <code>proposalApprove</code> + <code>vaultTransactionExecute</code> code stubs.
+              </td>
+              <td class="sp-track">Public Goods (narrative)</td>
+            </tr>
+            <tr>
+              <td class="sp-name">Adevar Labs</td>
+              <td class="sp-tier sp-tier-x">submit</td>
+              <td class="sp-ev">
+                We are the audit subject — 4 deployed Anchor programs, reentrancy guard at byte-flip PDA, 7/7 anchor integration tests, CPI-depth analysis, end-to-end puppeteer harness against real Phantom CRX.
+              </td>
+              <td class="sp-track">Adevar Labs $50K (audit credits)</td>
+            </tr>
+            <tr class="sp-dropped">
+              <td class="sp-name">GoldRush · Covalent</td>
+              <td class="sp-tier sp-tier-drop">DROPPED</td>
+              <td class="sp-ev">
+                Solana coverage is mainnet-only per <a class="inline-link" href="https://goldrush.dev/chains/solana/" target="_blank" rel="noopener">goldrush.dev/chains/solana</a>. Without mainnet deploy, would be name-drop only. Honesty over inflated track count.
+              </td>
+              <td class="sp-track">— skipped —</td>
+            </tr>
+            <tr class="sp-dropped">
+              <td class="sp-name">Birdeye (Eitherway angle)</td>
+              <td class="sp-tier sp-tier-drop">DROPPED</td>
+              <td class="sp-ev">
+                Mainnet-only per <a class="inline-link" href="https://docs.birdeye.so/docs/supported-networks" target="_blank" rel="noopener">docs.birdeye.so/docs/supported-networks</a>. Replaced by QuickNode angle for the same Eitherway $20K track.
+              </td>
+              <td class="sp-track">— skipped —</td>
+            </tr>
+            <tr class="sp-dropped">
+              <td class="sp-name">Dune Analytics</td>
+              <td class="sp-tier sp-tier-drop">DROPPED</td>
+              <td class="sp-ev">
+                <code>dune/audit_events.sql</code> shipped as the load-bearing artifact (decodes <code>MetaHookAuditEvent</code> base64 from <code>Program data:</code> log lines), but Dune indexes Solana mainnet only; dashboard would have no data without mainnet deploy.
+              </td>
+              <td class="sp-track">— skipped —</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="sponsors-foot">
+        <p class="docs-body">
+          Why we publish this: the Public Goods Award rewards transparency. Audit
+          claims that can't be substantiated with a file:line citation are
+          marketing noise; the table above is the working document our team uses
+          internally. Treating outside judges to the same artifact is the
+          public-good thing to do.
+        </p>
+        <p class="docs-body">
+          For the integration code itself, see the GitHub repo. For the live
+          surface where these integrations show up, see the
+          <a href="../demo/" class="inline-link">interactive demo</a>.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <span>Sponsor audit · refreshed 2026-05-10 · MIT-licensed</span>
+      <span><a href="https://github.com/Yonkoo11/multihook" target="_blank" rel="noopener">github.com/Yonkoo11/multihook</a></span>
+    </footer>
+  </body>
+</html>
