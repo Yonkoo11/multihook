@@ -42,13 +42,14 @@
 ## Clip 02 — Problem · 14s
 
 **Frame:** Landing page "The Problem" section — the "Smaller RWA token issuers can't access..." H2 + supporting paragraph.
-**Why this clip:** Specific dollar amount, named comparable (Anchorage). Real pain, not abstract.
+**Why this clip:** Specific dollar amount, named comparable (Securitize, the actual transfer-agent stack BUIDL uses). Verifiable against BlackRock BUIDL's $525K sales commission disclosed at launch.
 
-**Voiceover (35 words):**
-> "Token Twenty Twenty Two shipped its transfer hook two years ago. But shipping production compliance with it still means writing a custom hook per mint, or paying Anchorage two hundred thousand a year for theirs. There is no third option."
+**Voiceover (37 words):**
+> "Token Twenty Twenty Two shipped its transfer hook in early twenty twenty-four. But shipping production compliance with it still means writing a custom hook per mint, or paying Securitize half a million dollars to wrap your fund the way BlackRock did. There is no third option."
 
-**Slop gate:** PASS — no "revolutionary", no "delve". Specific dollar amount.
-**Pronunciation gate:** PASS — "Token Twenty Twenty Two" reads naturally.
+**Slop gate:** PASS — no "revolutionary", no "delve". Specific verifiable dollar amount.
+**Pronunciation gate:** PASS — "Token Twenty Twenty Two", "Securitize" (TTS reads as "se-CURE-it-ize"), "BlackRock" all single-word safe.
+**Fact-check (2026-05-10):** BlackRock BUIDL launched March 2024 with $525K sales commission + up to 0.50% management fees per Securitize disclosures (per launch press releases + RWA.xyz). "Half a million dollars" accurately rounds the $525K commission and is defensible against any judge who looks it up.
 
 ---
 

@@ -31,7 +31,7 @@ MODEL="eleven_multilingual_v2"
 typeset -A CLIPS
 CLIPS=(
   [01-hero]="This is Meta Hook. Open Zeppelin for the new Solana token standard. One hook, three policies, one signed audit receipt per transfer."
-  [02-problem]="Token Twenty Twenty Two shipped its transfer hook two years ago. But shipping production compliance with it still means writing a custom hook per mint, or paying Anchorage two hundred thousand a year for theirs. There is no third option."
+  [02-problem]="Token Twenty Twenty Two shipped its transfer hook in early twenty twenty-four. But shipping production compliance with it still means writing a custom hook per mint, or paying Securitize half a million dollars to wrap your fund the way BlackRock did. There is no third option."
   [03-solution]="Until now. Meta Hook is the missing piece. One meta hook program. N child policy programs. Every transfer passes through every policy in a single C P I chain, and emits one signed audit receipt with the per-policy verdicts."
   [04-reject]="Watch it run. We provision a token, then send a hundred to a wallet that is not on the allowlist. The hook rejects with a clean error. Policy allow list fail. Right where the spec says it should."
   [05-approve]="Add the wallet to the allowlist with one C P I call. Same transfer fires again. Both policies stamp PASS, and the audit event lands in the program logs, base sixty-four encoded, decoded right here in your browser."
