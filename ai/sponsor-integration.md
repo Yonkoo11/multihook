@@ -99,15 +99,27 @@ The key MUST be domain-restricted in Helius's dashboard before going public — 
 - ⏳ Sign-In With Solana session (Phantom 3/5 → 4/5)
 - ⏳ Phantom mobile deeplink button (Phantom 4/5 → 4.5/5)
 - ⏳ @solana/wallet-adapter-phantom swap (cosmetic; debatable depth bump for the bundle-size cost)
-- ⏳ Squads multisig pattern doc (Squads 0/5 → 2/5)
+- ✅ Squads multisig pattern doc (Squads 0/5 → 2/5) — landed in `POLICY_AUTHORITY.md`
+
+### Mainnet activation queue (waiting on user)
+- ⏳ Send ~5 SOL to deployer `FV3vJxFDbusRKefLmRaXStzfyi5yzf6JiTVPcZYpiKo9` to deploy 3 core programs to mainnet (~4.5 SOL rent + 0.5 buffer)
+- ⏳ Confirm Helius key referrer-locked to `yonkoo11.github.io` so commit `b48334d` (env-inlining fix) can be pushed
+- ⏳ Sign up GoldRush + Birdeye, set their respective env vars
+- ⏳ Publish `dune/audit_events.sql` as a Dune query, pin to a public dashboard, set `VITE_DUNE_DASHBOARD_URL`
+- ⏳ Once all of the above ship, the analytics section's three panels populate with live mainnet data + the live demo footer flips from "public devnet" → "Helius RPC"
 
 ## Pre-submission verification (Phase 4.5 self-audit, run 48h before deadline)
 
 | Sponsor | Target | Actual | Evidence (URL or file:line) | Gap |
 |---|---|---|---|---|
-| Phantom | 4 | 3 | `app/src/wallet.ts:32` signMessage + `app/src/demo.ts:419` signAuditReceipt + `app/src/main.ts` onTransferOk signs after every successful transfer | -1: SIWS session + mobile deeplink still queued |
-| Helius  | 3 | 3 | `app/src/programs.ts:DEMO_RPC` env-gated; `docs/assets/index-*.js` contains `helius-rpc.com` (1 match) confirming key inlined at build | 0 — depth target met |
-| Squads  | 2 | 0 | none | -2: pattern doc not written |
+| Phantom | 4 | 3 | `app/src/wallet.ts:35` signMessage adapter + `app/src/demo.ts:419` signAuditReceipt + `app/src/main.ts:442` onTransferOk signs after every successful transfer; receipt rendering in `app/src/main.ts:renderSignedReceipt` | -1: SIWS session + mobile deeplink still queued |
+| Helius  | 3 | 3 | `app/src/programs.ts:DEMO_RPC` literal env access (Vite static-substitutes the key at build); built bundle `docs/assets/index-*.js` contains `helius-rpc.com` (1 match); footer surfaces active provider; PUSH PENDING referrer-restriction confirmation | 0 — depth target met |
+| Squads  | 2 | 2 | `POLICY_AUTHORITY.md` — single-key threat model + 2-of-3 worked example with multisigCreateV2/vaultTransactionCreate/proposalApprove/vaultTransactionExecute code stubs + Phase 2 governance instruction suggestions | 0 — depth target met |
+| SNS (Bonfida) | 3 | 3 | `programs/policy-sns-allowlist/src/lib.rs` deployed devnet at `4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo` (verified executable via `solana program show`); 3-guard check_transfer (account owner, allowlist membership, NameRecord owner equality) | 0 — depth target met (UNTESTED end-to-end against a real .sol domain — confidence MEDIUM) |
+| Adevar Labs | n/a | n/a | Submission-only track ($50K audit credits); audit subject = our 3 deployed programs + reentrancy guard + 7/7 integration tests; submission text in `submissions/adevar-labs.md` | 0 — submission ready |
+| Dune | 4 | 3 | `dune/audit_events.sql` decodes MetaHookAuditEvent base64 from `Program data:` log lines via byte-level borsh decode + pinned discriminator; 3 starter dashboard tile queries inline | -1: dashboard not yet published (requires mainnet deploy + first audit event) |
+| GoldRush | 3 | 3 | `app/src/analytics-goldrush.ts` parallel calls to token_holders_v2 + transactions_v3 with defensive error handling; `app/src/analytics-render.ts` UI rendering; CORS `*` confirmed via OPTIONS probe | 0 — code shipped; activates on mainnet mint config |
+| Birdeye (Eitherway angle) | 3 | 3 | `app/src/analytics-birdeye.ts` parallel calls to /defi/token_overview + /defi/history_price; SVG sparkline; 6-tile stat grid; CORS `*` + `x-api-key,x-chain` confirmed via OPTIONS probe | 0 — code shipped; activates on mainnet mint config |
 
 Hard gate: if Phantom or Helius drops below 3, EITHER ship the missing wins by killing a polish task, OR drop the affected track from the submission. Honest depth > inflated track count.
 
