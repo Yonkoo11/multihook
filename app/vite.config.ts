@@ -18,7 +18,6 @@ export default defineConfig({
         demo:             resolve(__dirname, "demo/index.html"),
         docs_policies:    resolve(__dirname, "docs/policies/index.html"),
         docs_governance:  resolve(__dirname, "docs/governance/index.html"),
-        sponsors:         resolve(__dirname, "sponsors/index.html"),
       },
     },
   },
