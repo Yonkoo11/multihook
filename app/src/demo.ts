@@ -489,7 +489,7 @@ export interface AuditEvent {
  * `emit!` macro writes the event as base64-encoded `[8-byte discriminator |
  * borsh-serialized fields]`. Fields here are 3 Pubkey + u64 + 3 bool.
  */
-function decodeAuditEvent(logs: string[], programs: Programs): AuditEvent | null {
+export function decodeAuditEvent(logs: string[], programs: Programs): AuditEvent | null {
   const programDataLines = logs.filter((l) => l.startsWith("Program data:"));
   const idl = programs.metahook.idl as any;
   const eventDef = idl.events?.find(

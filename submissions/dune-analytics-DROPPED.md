@@ -1,3 +1,7 @@
+> ⛔ **DROPPED** — see Note at the top of this file. Original analysis preserved below for reference / V2 mainnet activation path.
+
+---
+
 # Dune Analytics — $6K Frontier Data Sidetrack
 
 **Track:** Dune Analytics | Frontier Data Sidetrack — Win $6K Plan

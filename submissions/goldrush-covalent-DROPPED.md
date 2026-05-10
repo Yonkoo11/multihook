@@ -1,3 +1,7 @@
+> ⛔ **DROPPED** — see Note at the top of this file. Original analysis preserved below for reference / V2 mainnet activation path.
+
+---
+
 # GoldRush (Covalent) — $3K Sidetrack
 
 **Track:** Build with GoldRush Track (Powered by Covalent)

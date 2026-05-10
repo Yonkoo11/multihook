@@ -10,6 +10,15 @@ interface ImportMetaEnv {
   readonly VITE_HELIUS_KEY?: string;
 
   /**
+   * Optional QuickNode Solana devnet endpoint URL (full URL — QuickNode
+   * endpoints have unique per-account hashes, not just keys). When set,
+   * QuickNode takes priority over Helius for resilience: the dApp uses
+   * QuickNode primary, Helius fallback, public devnet last-resort.
+   * Single-provider failure no longer takes the demo down.
+   */
+  readonly VITE_QUICKNODE_DEVNET?: string;
+
+  /**
    * Optional mainnet Token-2022 mint address protected by MetaHook. When
    * set, the dApp renders the "Live Mint Analytics" section that pulls
    * data from GoldRush + Birdeye + Dune for the production deployment.

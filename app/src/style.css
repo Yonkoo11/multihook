@@ -117,6 +117,40 @@ body {
 }
 @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
 
+/* SIWS issuer-session pill (sits next to the wallet pill in the topbar) */
+.siws-pill {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  padding: 7px 12px 7px 10px;
+  border: 1px solid rgba(245, 166, 35, 0.36);
+  border-radius: 999px;
+  color: var(--ink);
+  background: rgba(245, 166, 35, 0.06);
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-left: 10px;
+}
+.siws-pill-tag {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--stamp);
+  color: var(--paper);
+  font-weight: 700;
+}
+.siws-pill-out {
+  background: transparent;
+  border: 0;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  cursor: pointer;
+  padding: 0 0 0 8px;
+  text-decoration: underline;
+}
+.siws-pill-out:hover { color: var(--reject); }
+#siwsBtn { margin-left: 10px; }
+
 main { max-width: 1180px; margin: 0 auto; padding: 60px 36px 96px; position: relative; z-index: 1; }
 
 /* ============================ HERO ==================================== */
@@ -530,6 +564,125 @@ main { max-width: 1180px; margin: 0 auto; padding: 60px 36px 96px; position: rel
   max-height: 280px;
   overflow-y: auto;
 }
+
+/* ============================ AUDIT FEED ============================== */
+.audit-feed {
+  position: relative;
+  margin-top: 24px;
+  padding: 28px 32px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, var(--paper-2), var(--paper-3) 70%),
+    radial-gradient(640px 220px at -10% 0%, var(--ledger-glow), transparent 60%);
+  z-index: 1;
+}
+.audit-feed.hidden { display: none; }
+.audit-feed-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(91, 141, 239, 0.10);
+}
+.audit-feed-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.audit-feed-source {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--ledger);
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+.audit-feed-sub {
+  margin: 6px 0 16px;
+  font-size: 0.86rem;
+  color: var(--ink-dim);
+  max-width: 64ch;
+}
+.audit-feed-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.audit-feed-entry {
+  display: grid;
+  grid-template-columns: minmax(180px, auto) 1fr;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid rgba(91, 141, 239, 0.10);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+.audit-feed-entry-approved { border-color: rgba(245, 166, 35, 0.30); }
+.audit-feed-entry-rejected { border-color: rgba(212, 60, 50, 0.28); }
+.audit-feed-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.audit-feed-tag {
+  font-size: 0.62rem;
+  letter-spacing: 0.10em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+.audit-feed-tag.approved {
+  color: var(--stamp);
+  background: var(--stamp-soft);
+  border: 1px solid rgba(245, 166, 35, 0.35);
+}
+.audit-feed-tag.rejected {
+  color: var(--reject);
+  background: rgba(212, 60, 50, 0.08);
+  border: 1px solid rgba(212, 60, 50, 0.30);
+}
+.audit-feed-time {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+.audit-feed-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-self: end;
+  flex-wrap: wrap;
+}
+.audit-feed-sig {
+  color: var(--ledger);
+  text-decoration: none;
+  word-break: break-all;
+}
+.audit-feed-sig:hover { text-decoration: underline; }
+.audit-feed-detail {
+  color: var(--ink-dim);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+.audit-feed-reason {
+  color: var(--reject);
+}
+.audit-feed-empty {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+.audit-feed-empty.hidden { display: none; }
 
 /* ===================== LIVE MINT ANALYTICS (mainnet-gated) ============== */
 .analytics-section {

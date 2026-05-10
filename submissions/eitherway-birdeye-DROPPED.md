@@ -1,3 +1,7 @@
+> ⛔ **DROPPED** — see Note at the top of this file. Original analysis preserved below for reference / V2 mainnet activation path.
+
+---
+
 # Eitherway — $20K (Birdeye angle)
 
 **Track:** Build Live dApp with Solflare, Kamino, DFlow, Quicknode or Birdeye on... (Eitherway, $20,000 USDC)

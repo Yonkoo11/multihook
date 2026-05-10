@@ -108,6 +108,24 @@ The key MUST be domain-restricted in Helius's dashboard before going public — 
 - ⏳ Publish `dune/audit_events.sql` as a Dune query, pin to a public dashboard, set `VITE_DUNE_DASHBOARD_URL`
 - ⏳ Once all of the above ship, the analytics section's three panels populate with live mainnet data + the live demo footer flips from "public devnet" → "Helius RPC"
 
+### 2026-05-10 STRATEGY PIVOT (devnet-only path, no mainnet SOL spend)
+
+**Mainnet plan dropped after re-verifying GoldRush/Birdeye/Dune all index Solana mainnet only.** No devnet workaround exists. SOL spend cancelled.
+
+**Substituted depth wins on devnet (this session):**
+- **Helius 3/5 → 4/5**: shipped `audit-feed.ts` — uses `getSignaturesForAddress(sourceAta) + getTransaction(...) + decodeAuditEvent` to render a "Recent audit events" panel below the receipt with last 10 transfers, status pills, reject reasons, Solscan links. Refreshes after every demo step
+- **QuickNode 0/5 → 3/5 (Eitherway $20K angle)**: multi-RPC fallback in `programs.ts`. Priority chain QuickNode → Helius → public devnet. Footer label adapts to active provider. Solves the "demo freezes when public RPC throttles" failure mode
+- **Phantom 3/5 → 4/5**: shipped `siws.ts` — Sign-In With Solana (wallet-standard `solana:signIn` feature). "Sign in as issuer" button in topbar; portable session token persisted to localStorage (1 hr TTL); session pill shows "ISSUER · Xm" + sign out. Test provider mock includes deterministic SIWS response
+
+**Sidetrack submissions (revised):**
+- ✅ Public Goods Award (main Frontier)
+- ✅ Adevar Labs $50K (submission only)
+- ✅ SNS Identity $5K (devnet deploy of `policy-sns-allowlist`)
+- ✅ Eitherway $20K (QuickNode multi-RPC angle, replaces Birdeye)
+- ⛔ DROPPED: Dune $6K, GoldRush $3K, Eitherway-Birdeye angle (all mainnet-only)
+
+**Submission docs reflect the pivot**: `submissions/eitherway-quicknode.md` is the new Eitherway target; the three mainnet-only submissions renamed `*-DROPPED.md` with a header note. Code stays in the bundle as documented "ready for mainnet" reference.
+
 ## Pre-submission verification (Phase 4.5 self-audit, run 48h before deadline)
 
 | Sponsor | Target | Actual | Evidence (URL or file:line) | Gap |

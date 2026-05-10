@@ -32,6 +32,14 @@ import {
   tryTransferExpectFail,
 } from "./demo";
 import { mountAnalytics } from "./analytics-render";
+import { AuditFeedEntry, fetchAuditFeed } from "./audit-feed";
+import { TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import {
+  SiwsSession,
+  clearSession,
+  issuerSignIn,
+  loadSession,
+} from "./siws";
 
 interface UI {
   walletStatus: HTMLElement;
@@ -83,6 +91,7 @@ let connection: Connection;
 let wallet: PhantomWallet | null = null;
 let programs: Programs | null = null;
 let state: DemoState | null = null;
+let siwsSession: SiwsSession | null = null;
 
 /**
  * Safe-DOM logger. Builds nodes from text + optional link only — no innerHTML
@@ -241,6 +250,90 @@ function renderAuditEvent(evt: AuditEvent | null, receipt: SignedReceipt | null 
   renderSignedReceipt(receipt);
 }
 
+async function refreshAuditFeed() {
+  if (!programs || !wallet || !state?.provisioned) return;
+  const box = document.getElementById("auditFeedBox");
+  const list = document.getElementById("auditFeedList");
+  const empty = document.getElementById("auditFeedEmpty");
+  if (!box || !list || !empty) return;
+  box.classList.remove("hidden");
+  while (list.firstChild) list.removeChild(list.firstChild);
+
+  const mint = mintKp(state).publicKey;
+  const sourceAta = getAssociatedTokenAddressSync(
+    mint,
+    wallet.publicKey,
+    false,
+    TOKEN_2022_PROGRAM_ID
+  );
+
+  let entries: AuditFeedEntry[] = [];
+  try {
+    entries = await fetchAuditFeed(connection, programs, sourceAta, 10);
+  } catch (e) {
+    console.error("audit feed fetch failed", e);
+    empty.classList.remove("hidden");
+    empty.textContent = "audit feed fetch failed (RPC issue) — retry later";
+    return;
+  }
+
+  if (entries.length === 0) {
+    empty.classList.remove("hidden");
+    empty.textContent = "no audit events yet — run a transfer above";
+    return;
+  }
+  empty.classList.add("hidden");
+
+  for (const entry of entries) {
+    list.appendChild(renderAuditFeedEntry(entry));
+  }
+}
+
+function renderAuditFeedEntry(entry: AuditFeedEntry): HTMLElement {
+  const li = document.createElement("li");
+  li.className = `audit-feed-entry audit-feed-entry-${entry.status}`;
+
+  const left = document.createElement("div");
+  left.className = "audit-feed-left";
+  const tag = document.createElement("span");
+  tag.className = `audit-feed-tag ${entry.status}`;
+  tag.textContent = entry.status === "approved" ? "APPROVED" : "REJECTED";
+  left.appendChild(tag);
+
+  const ts = document.createElement("span");
+  ts.className = "audit-feed-time";
+  ts.textContent = entry.blockTime
+    ? new Date(entry.blockTime * 1000).toLocaleString()
+    : "pending";
+  left.appendChild(ts);
+
+  const right = document.createElement("div");
+  right.className = "audit-feed-right";
+  const sig = document.createElement("a");
+  sig.className = "audit-feed-sig";
+  sig.href = `https://solscan.io/tx/${entry.signature}?cluster=devnet`;
+  sig.target = "_blank";
+  sig.rel = "noopener";
+  sig.textContent = `${entry.signature.slice(0, 8)}…${entry.signature.slice(-8)}`;
+  right.appendChild(sig);
+
+  if (entry.event) {
+    const detail = document.createElement("span");
+    detail.className = "audit-feed-detail";
+    detail.textContent = `amt ${entry.event.amount} → ${entry.event.destination.slice(0, 4)}…${entry.event.destination.slice(-4)}`;
+    right.appendChild(detail);
+  } else if (entry.rejectReason) {
+    const detail = document.createElement("span");
+    detail.className = "audit-feed-detail audit-feed-reason";
+    detail.textContent = entry.rejectReason;
+    right.appendChild(detail);
+  }
+
+  li.appendChild(left);
+  li.appendChild(right);
+  return li;
+}
+
 function renderSignedReceipt(receipt: SignedReceipt | null) {
   // Remove any prior signed-receipt block (re-render-safe).
   const prior = ui.auditEventBox.querySelector(".audit-signed");
@@ -306,6 +399,7 @@ async function connect() {
       wallet = null;
       programs = null;
       state = null;
+      siwsSession = null;
       renderWallet();
       refreshButtons();
       refreshIdsTable();
@@ -315,10 +409,12 @@ async function connect() {
         wallet = null;
         programs = null;
         state = null;
+        siwsSession = null;
       } else {
         wallet = new PhantomWallet(provider);
         programs = buildPrograms(connection, wallet);
         state = loadState(wallet.publicKey);
+        siwsSession = loadSession(wallet.publicKey);
       }
       renderWallet();
       refreshButtons();
@@ -331,6 +427,9 @@ async function connect() {
       saveState(wallet.publicKey, state);
     }
 
+    // Restore SIWS session if one exists for this issuer pubkey.
+    siwsSession = loadSession(wallet.publicKey);
+
     renderWallet();
     refreshButtons();
     refreshIdsTable();
@@ -339,6 +438,13 @@ async function connect() {
     clearLog(ui.provisionLog);
     log("connected", "ok");
     await ensureMinBalance(connection, wallet.publicKey, 0.5, log);
+
+    // If returning user has an existing provisioned mint, populate the
+    // audit feed immediately so they see their full history without
+    // having to re-run a transfer first.
+    if (state?.provisioned) {
+      refreshAuditFeed().catch(() => {});
+    }
   } catch (e: any) {
     alert(`Connect failed: ${e.message ?? e}`);
   } finally {
@@ -369,6 +475,58 @@ function renderWallet() {
   strong.textContent = shortPk(wallet.publicKey);
   pill.appendChild(strong);
   ui.walletStatus.appendChild(pill);
+
+  // SIWS session UI: either "Sign in as issuer" button or active session pill.
+  if (siwsSession) {
+    const sessionPill = document.createElement("span");
+    sessionPill.className = "siws-pill";
+    const tag = document.createElement("span");
+    tag.className = "siws-pill-tag";
+    tag.textContent = "ISSUER";
+    sessionPill.appendChild(tag);
+    const remaining = Math.max(
+      0,
+      Math.floor((new Date(siwsSession.expiresAt).getTime() - Date.now()) / 60000)
+    );
+    sessionPill.appendChild(
+      document.createTextNode(` · session ${remaining}m`)
+    );
+    const out = document.createElement("button");
+    out.className = "siws-pill-out";
+    out.textContent = "sign out";
+    out.onclick = onSiwsSignOut;
+    sessionPill.appendChild(out);
+    ui.walletStatus.appendChild(sessionPill);
+  } else {
+    const siwsBtn = document.createElement("button");
+    siwsBtn.id = "siwsBtn";
+    siwsBtn.className = "btn btn-ghost";
+    siwsBtn.textContent = "Sign in as issuer";
+    siwsBtn.onclick = onSiwsSignIn;
+    ui.walletStatus.appendChild(siwsBtn);
+  }
+}
+
+async function onSiwsSignIn() {
+  if (!wallet) return;
+  try {
+    siwsSession = await issuerSignIn(wallet);
+    renderWallet();
+  } catch (e: any) {
+    const msg = e?.message ?? String(e);
+    if (/reject|denied|user.*cancel/i.test(msg)) {
+      // Silent decline — leave UI alone.
+      return;
+    }
+    alert(`Sign-in failed: ${msg}`);
+  }
+}
+
+function onSiwsSignOut() {
+  if (!wallet) return;
+  clearSession(wallet.publicKey);
+  siwsSession = null;
+  renderWallet();
 }
 
 async function onProvision() {
@@ -380,6 +538,7 @@ async function onProvision() {
     saveState(wallet.publicKey, state);
     refreshButtons();
     refreshIdsTable();
+    refreshAuditFeed().catch(() => {});
   } catch (e: any) {
     log(`provision failed: ${e.message ?? e}`, "bad");
   } finally {
@@ -399,6 +558,7 @@ async function onTransferFail() {
     } else if (!r.failed) {
       log("transfer succeeded — destination may already be on allowlist.", "warn");
     }
+    refreshAuditFeed().catch(() => {});
   } catch (e: any) {
     log(`unexpected error: ${e.message ?? e}`, "bad");
   } finally {
@@ -451,6 +611,7 @@ async function onTransferOk() {
         }
       }
     }
+    refreshAuditFeed().catch(() => {});
   } catch (e: any) {
     log(`transfer failed: ${e.message ?? e}`, "bad");
     log("(if you skipped step 3 the allowlist policy will reject)", "dim");
@@ -481,11 +642,15 @@ async function init() {
 
   // Surface the active RPC provider in the footer so judges (and ourselves
   // during demos) can see which path is in use without opening devtools.
+  // Multi-provider priority: QuickNode > Helius > public devnet.
   const footer = document.getElementById("footerStack");
   if (footer) {
-    const rpcLabel = RPC_PROVIDER === "helius"
-      ? "Helius RPC"
-      : "public devnet RPC (set VITE_HELIUS_KEY for higher tier)";
+    const rpcLabel =
+      RPC_PROVIDER === "quicknode"
+        ? "QuickNode RPC (Helius + public devnet on standby)"
+        : RPC_PROVIDER === "helius"
+        ? "Helius RPC (public devnet on standby)"
+        : "public devnet RPC (set VITE_QUICKNODE_DEVNET or VITE_HELIUS_KEY for higher tier)";
     footer.textContent = `Anchor v0.32.1 · Token-2022 · Solana devnet · ${rpcLabel}`;
   }
 

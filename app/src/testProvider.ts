@@ -108,6 +108,36 @@ export async function maybeInstallTestProvider(): Promise<boolean> {
       sig.set(a, 32);
       return { signature: sig, publicKey: kp.publicKey };
     },
+    /**
+     * Mock signIn for SIWS. Builds the canonical SIWS message string from
+     * the input and signs it the same way mock signMessage does. Real
+     * Phantom does proper ed25519 over the canonical message.
+     */
+    signIn: async (input: any) => {
+      const lines = [
+        `${input.domain ?? "(no-domain)"} wants you to sign in with your Solana account:`,
+        kp.publicKey.toBase58(),
+        "",
+        input.statement ?? "",
+        "",
+        `URI: ${input.uri ?? ""}`,
+        `Version: ${input.version ?? "1"}`,
+        `Chain ID: ${input.chainId ?? ""}`,
+        `Nonce: ${input.nonce ?? ""}`,
+        `Issued At: ${input.issuedAt ?? new Date().toISOString()}`,
+      ];
+      if (input.expirationTime) lines.push(`Expiration Time: ${input.expirationTime}`);
+      const signedMessage = new TextEncoder().encode(lines.join("\n"));
+      const combined = new Uint8Array(kp.secretKey.length + signedMessage.length);
+      combined.set(kp.secretKey, 0);
+      combined.set(signedMessage, kp.secretKey.length);
+      const hash = await crypto.subtle.digest("SHA-256", combined);
+      const a = new Uint8Array(hash);
+      const signature = new Uint8Array(64);
+      signature.set(a, 0);
+      signature.set(a, 32);
+      return { signature, signedMessage, address: kp.publicKey.toBase58() };
+    },
     on: (event: string, cb: (...a: any[]) => void) => {
       (listeners[event] ??= []).push(cb);
     },

@@ -158,6 +158,21 @@
         <dl id="auditEventTable" class="audit-table"></dl>
       </section>
 
+      <!-- ========================== AUDIT FEED ============================== -->
+      <section id="auditFeedBox" class="audit-feed hidden" aria-label="Recent audit events on this mint">
+        <div class="audit-feed-head">
+          <h3 class="audit-feed-title">Recent audit events</h3>
+          <span class="audit-feed-source">Helius RPC · decoded MetaHookAuditEvent</span>
+        </div>
+        <p class="audit-feed-sub">
+          Every transfer attempt against your mint, decoded out of the on-chain
+          program logs. Approved entries carry a signed audit event; rejects
+          show the policy that vetoed them.
+        </p>
+        <ol id="auditFeedList" class="audit-feed-list"></ol>
+        <p id="auditFeedEmpty" class="audit-feed-empty hidden">no audit events yet — run a transfer above</p>
+      </section>
+
       <!-- =========================== LIVE MINT ANALYTICS ==================== -->
       <section id="analyticsBox" class="analytics-section" aria-label="Live mint analytics across GoldRush, Birdeye, and Dune"></section>
 

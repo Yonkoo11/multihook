@@ -43,6 +43,42 @@ export class PhantomWallet {
     throw new Error("Unexpected signMessage response shape");
   }
 
+  /**
+   * Sign-In With Solana (SIWS). Phantom implements the wallet-standard
+   * `solana:signIn` feature — a structured popup that shows the issuing
+   * domain, the requested statement, the chain ID, and an expiration
+   * window. The signed payload is a canonical UTF-8 message Phantom
+   * formats from the input fields, plus the user's ed25519 signature
+   * over it.
+   *
+   * For MetaHook this gives us a portable issuer session: the signed
+   * payload can be persisted to localStorage and replayed by an audit
+   * tool to confirm "this issuer was signed in to this dApp at this
+   * domain at this time".
+   */
+  async signIn(input: SiwsInput): Promise<SiwsOutput> {
+    if (!this.provider.signIn) {
+      throw new Error("Wallet does not support solana:signIn (SIWS)");
+    }
+    const result = await this.provider.signIn(input);
+    if (!result?.signature || !result?.signedMessage) {
+      throw new Error("Unexpected signIn response shape");
+    }
+    return {
+      account: {
+        publicKey: this.publicKey,
+      },
+      signature:
+        result.signature instanceof Uint8Array
+          ? result.signature
+          : Uint8Array.from(result.signature ?? []),
+      signedMessage:
+        result.signedMessage instanceof Uint8Array
+          ? result.signedMessage
+          : Uint8Array.from(result.signedMessage ?? []),
+    };
+  }
+
   // anchor's Wallet interface also requires `payer`, but it's only used by
   // server-side flows. Browser flows never call it; expose a throwing stub.
   get payer(): never {
@@ -62,8 +98,38 @@ export interface PhantomProvider {
     message: Uint8Array,
     encoding?: "utf8" | "hex"
   ) => Promise<{ signature: Uint8Array; publicKey?: PublicKey } | Uint8Array>;
+  signIn?: (input: SiwsInput) => Promise<{
+    signature: Uint8Array | number[];
+    signedMessage: Uint8Array | number[];
+    address?: string;
+  }>;
   on: (event: string, cb: (...args: any[]) => void) => void;
   removeListener?: (event: string, cb: (...args: any[]) => void) => void;
+}
+
+/**
+ * SIWS payload — wallet-standard `solana:signIn` input.
+ * https://github.com/solana-labs/wallet-standard/blob/master/packages/core/features/src/signIn.ts
+ */
+export interface SiwsInput {
+  domain: string;
+  address?: string;
+  statement?: string;
+  uri?: string;
+  version?: string;
+  chainId?: string;       // CAIP-2 e.g. "solana:103" for devnet
+  nonce?: string;
+  issuedAt?: string;      // ISO 8601
+  notBefore?: string;
+  expirationTime?: string;
+  requestId?: string;
+  resources?: string[];
+}
+
+export interface SiwsOutput {
+  account: { publicKey: PublicKey };
+  signature: Uint8Array;
+  signedMessage: Uint8Array;
 }
 
 declare global {

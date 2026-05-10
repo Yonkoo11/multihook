@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="./assets/index-DFYCvuWo.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-_-MkzZlW.css">
+    <script type="module" crossorigin src="./assets/index-C_66-MEM.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Cd5RdBbd.css">
   </head>
   <body>
     <div id="grain" aria-hidden="true"></div>
@@ -157,6 +157,21 @@
         <h2 class="audit-title">MetaHookAuditEvent</h2>
         <div id="auditReceiptId" class="audit-receipt-id">RECEIPT</div>
         <dl id="auditEventTable" class="audit-table"></dl>
+      </section>
+
+      <!-- ========================== AUDIT FEED ============================== -->
+      <section id="auditFeedBox" class="audit-feed hidden" aria-label="Recent audit events on this mint">
+        <div class="audit-feed-head">
+          <h3 class="audit-feed-title">Recent audit events</h3>
+          <span class="audit-feed-source">Helius RPC · decoded MetaHookAuditEvent</span>
+        </div>
+        <p class="audit-feed-sub">
+          Every transfer attempt against your mint, decoded out of the on-chain
+          program logs. Approved entries carry a signed audit event; rejects
+          show the policy that vetoed them.
+        </p>
+        <ol id="auditFeedList" class="audit-feed-list"></ol>
+        <p id="auditFeedEmpty" class="audit-feed-empty hidden">no audit events yet — run a transfer above</p>
       </section>
 
       <!-- =========================== LIVE MINT ANALYTICS ==================== -->
