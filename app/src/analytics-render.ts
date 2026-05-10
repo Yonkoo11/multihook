@@ -322,9 +322,12 @@ function renderDunePanel(body: HTMLElement) {
 export async function mountAnalytics(container: HTMLElement): Promise<void> {
   clear(container);
 
-  const mint = import.meta.env?.VITE_MAINNET_MINT?.trim();
-  const goldrushKey = import.meta.env?.VITE_GOLDRUSH_KEY?.trim();
-  const birdeyeKey = import.meta.env?.VITE_BIRDEYE_KEY?.trim();
+  // Vite replaces `import.meta.env.VITE_*` at build time. Optional-chain
+  // form (`import.meta.env?.VITE_*`) defeats the substitution and the var
+  // stays runtime-undefined, so we read the literal expression here.
+  const mint = (import.meta.env.VITE_MAINNET_MINT as string | undefined)?.trim();
+  const goldrushKey = (import.meta.env.VITE_GOLDRUSH_KEY as string | undefined)?.trim();
+  const birdeyeKey = (import.meta.env.VITE_BIRDEYE_KEY as string | undefined)?.trim();
 
   // Section header
   const head = document.createElement("header");

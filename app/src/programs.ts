@@ -29,7 +29,10 @@ export const POLICY_SANCTIONS_ID = new PublicKey(
 // Why this matters: the prior public-devnet RPC was rate-limiting tx
 // simulation hard enough that Phantom's Confirm button couldn't enable in
 // our puppeteer tests. Real users on flaky networks would hit the same.
-const HELIUS_KEY = (import.meta.env?.VITE_HELIUS_KEY as string | undefined) ?? "";
+// Note: keep `import.meta.env.VITE_HELIUS_KEY` literal (no optional chain).
+// Vite replaces this at build time via static string substitution; using
+// `import.meta.env?.VITE_*` defeats that and the var stays runtime-undefined.
+const HELIUS_KEY = (import.meta.env.VITE_HELIUS_KEY as string | undefined) ?? "";
 export const DEMO_RPC = HELIUS_KEY
   ? `https://devnet.helius-rpc.com/?api-key=${HELIUS_KEY}`
   : "https://api.devnet.solana.com";

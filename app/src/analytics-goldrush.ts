@@ -56,7 +56,8 @@ class GoldRushError extends Error {
  * render the "configure to activate" placeholder without trying the API.
  */
 function requireKey(): string {
-  const k = import.meta.env?.VITE_GOLDRUSH_KEY?.trim();
+  // Literal env access — see programs.ts note on Vite static substitution.
+  const k = (import.meta.env.VITE_GOLDRUSH_KEY as string | undefined)?.trim();
   if (!k) throw new GoldRushError(0, "VITE_GOLDRUSH_KEY not set");
   return k;
 }

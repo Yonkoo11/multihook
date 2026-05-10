@@ -52,7 +52,8 @@ class BirdeyeError extends Error {
 }
 
 function requireKey(): string {
-  const k = import.meta.env?.VITE_BIRDEYE_KEY?.trim();
+  // Literal env access — see programs.ts note on Vite static substitution.
+  const k = (import.meta.env.VITE_BIRDEYE_KEY as string | undefined)?.trim();
   if (!k) throw new BirdeyeError(0, "VITE_BIRDEYE_KEY not set");
   return k;
 }

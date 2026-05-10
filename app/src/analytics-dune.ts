@@ -27,7 +27,10 @@ export interface DuneEmbedConfig {
 }
 
 export function getDuneEmbedConfig(): DuneEmbedConfig {
-  const url = import.meta.env?.VITE_DUNE_DASHBOARD_URL?.trim() ?? "";
+  // Literal env access — see programs.ts note on Vite static substitution.
+  const url =
+    (import.meta.env.VITE_DUNE_DASHBOARD_URL as string | undefined)?.trim() ??
+    "";
   return {
     dashboardUrl: url.length > 0 ? url : null,
     sqlSourcePath: "dune/audit_events.sql",
