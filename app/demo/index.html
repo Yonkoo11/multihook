@@ -114,20 +114,17 @@
           <div id="transferOkLog" class="logbox"></div>
         </article>
 
-        <article class="station station-optional" data-step="5">
-          <span class="station-num">05 · Optional</span>
-          <h2 class="station-title">Shield via Umbra</h2>
-          <p class="station-desc">
-            Move 100 tokens out of your public ATA into an Arcium-encrypted
-            Umbra account. Compliance is preserved — the shield is itself a
-            transfer, so MetaHook fires and the audit event still lands —
-            but the post-shield balance is hidden from any block explorer.
-          </p>
-          <button id="umbraShieldBtn" class="btn" disabled>
-            Shield 100 via Umbra
-          </button>
-          <div id="umbraShieldLog" class="logbox"></div>
-        </article>
+        <!--
+          Umbra/Arcium shield (Step 5) removed from the live demo: Arcium's
+          MPC programs are deployed on Arcium's testnet variant, not Solana
+          devnet, so the simulation fails at -32002 before any program runs.
+          The integration code lives at app/src/umbra-shield.ts for the
+          fast-follow when Arcium ships a devnet endpoint compatible with
+          MetaHook'd mints. The composability story (compliance fires
+          BEFORE privacy) holds in principle — the demo just doesn't
+          rehearse it because the privacy layer isn't reachable.
+        -->
+
       </section>
 
       <!-- ========================== AUDIT RECEIPT =========================== -->
