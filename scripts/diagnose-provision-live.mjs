@@ -127,10 +127,27 @@ if (!mintInfo) {
   ixs.push(createInitializeMintInstruction(mint.publicKey, 0, me.publicKey, null, TOKEN_2022_PROGRAM_ID));
 }
 
+// V1.1: per-mint MetaHookConfig PDA (must come BEFORE initializeExtraAccountMetaList)
+const configPda = PublicKey.findProgramAddressSync(
+  [Buffer.from("metahook-config"), mint.publicKey.toBuffer()], METAHOOK_ID,
+)[0];
+const configInfo = await conn.getAccountInfo(configPda, "confirmed");
+if (!configInfo) {
+  ixs.push(await metahook.methods.initializeConfig(
+    [
+      { programId: POLICY_ALLOWLIST_ID, policyPda: allowPda },
+      { programId: POLICY_SANCTIONS_ID, policyPda: ofacPda },
+    ],
+    0,
+  ).accountsPartial({
+    authority: me.publicKey, mint: mint.publicKey, config: configPda,
+    systemProgram: SystemProgram.programId,
+  }).instruction());
+}
+
 if (!extrasInfo) ixs.push(await metahook.methods.initializeExtraAccountMetaList().accountsPartial({
   payer: me.publicKey, extraAccountMetaList: extras, mint: mint.publicKey,
-  allowlistAuthority: me.publicKey, sanctionsAuthority: me.publicKey,
-  systemProgram: SystemProgram.programId,
+  config: configPda, systemProgram: SystemProgram.programId,
 }).instruction());
 
 if (!sourceAtaInfo) ixs.push(createAssociatedTokenAccountInstruction(me.publicKey, sourceAta, me.publicKey, mint.publicKey, TOKEN_2022_PROGRAM_ID));
