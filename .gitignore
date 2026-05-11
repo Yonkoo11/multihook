@@ -22,3 +22,6 @@ target/deploy/*-keypair.json
 test-ledger
 video/judge-frames/
 video/raw-recording-v4.mp4
+video/remotion-tech/.cache/
+video/remotion-tech/node_modules/
+video/remotion-tech/out/
