@@ -1,77 +1,52 @@
+#!/usr/bin/env node
 /**
- * MetaHook demo screen-recording harness.
+ * Path A recording driver — drives the FULL multihook demo flow with REAL
+ * Phantom popups visible, optimised for ffmpeg avfoundation screen capture.
  *
- * Drives the live demo on devnet through real Phantom popups while
- * recording the dApp page to MP4. The output is the raw screen capture;
- * audio overlay happens later in ffmpeg.
+ * Differences from phantom-e2e.mjs (the test harness):
+ *   - Visits the LANDING page first, scrolls hero + problem section before
+ *     navigating to /demo/. Same flow a judge would experience.
+ *   - Smooth cursor movements between actions.
+ *   - Beat timestamps emitted to a JSON log so the audio composite can be
+ *     time-aligned to the actual recording.
+ *   - Solscan cutaway after the receipt.
+ *   - docs/policies navigation + scroll for clip 07 (compose).
+ *   - Closing card overlay at end.
  *
- * Reuses the persistent Chrome profile + Phantom CRX from phantom-e2e.mjs
- * so onboarding is done once and we just unlock + go.
+ * Run via record-path-a.sh which wraps this with ffmpeg avfoundation capture.
  *
- * Outputs:
- *   video/raw-recording.mp4         — silent video of the live demo run
- *   scripts/screens/record-*.png    — debug screenshots at major beats
- *
- * Pacing: each step has a deliberate post-action sleep so the camera
- * lingers on each verdict rather than flashing past. Total recording
- * length is targeted at ~85s to match the voiceover budget.
+ * Env:
+ *   DEMO_URL          base URL (default http://localhost:4173)
+ *   PHANTOM_KEY_FILE  /tmp/phantom-test-key.b58
+ *   PROFILE_DIR       /tmp/multihook-phantom-profile
+ *   EXT_DIR           /tmp/phantom-crx/unpacked
+ *   PHANTOM_PASSWORD  test-wallet password
+ *   BEAT_LOG          where to write beat timestamps (default scripts/beats.json)
  */
-
 import puppeteer from "puppeteer-core";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
-
-// -- config ------------------------------------------------------------------
 
 const PHANTOM_ID = "bfnaelmomeimhlpmgjnjophhpkkoljpa";
 const PHANTOM_KEY_FILE = process.env.PHANTOM_KEY_FILE ?? "/tmp/phantom-test-key.b58";
-const DEMO_URL = process.env.DEMO_URL ?? "https://yonkoo11.github.io/multihook/";
+const DEMO_URL = process.env.DEMO_URL ?? "http://localhost:4173";
 const PROFILE_DIR = process.env.PROFILE_DIR ?? "/tmp/multihook-phantom-profile";
 const EXT_DIR = process.env.EXT_DIR ?? "/tmp/phantom-crx/unpacked";
 const PHANTOM_PASSWORD = process.env.PHANTOM_PASSWORD ?? "PhantomTest!2026Demo";
+const BEAT_LOG = process.env.BEAT_LOG ?? path.join(path.dirname(new URL(import.meta.url).pathname), "beats.json");
 
-const PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
-const VIDEO_DIR = path.join(PROJECT_ROOT, "video");
-const SCREENS_DIR = path.join(PROJECT_ROOT, "scripts", "screens");
-const RECORDING_OUT = path.join(VIDEO_DIR, "raw-recording.mp4");
-
-fs.mkdirSync(VIDEO_DIR, { recursive: true });
-fs.mkdirSync(SCREENS_DIR, { recursive: true });
-
-// 1920x1080 at 30fps, no audio (we composite audio in ffmpeg).
-const RECORDER_OPTIONS = {
-  fps: 30,
-  videoFrame: { width: 1920, height: 1080 },
-  videoCrf: 18,
-  videoCodec: "libx264",
-  videoPreset: "medium",
-  videoBitrate: 1000,
-  aspectRatio: "16:9",
-};
-
-// -- pacing budget -----------------------------------------------------------
-// Each beat targets approximately the voiceover-clip duration so the audio
-// overlay drops in at the right moment without further re-timing.
-
-const PACE = {
-  HERO_LINGER:        8500,   // clip 01 ≈ 8.1s — landing fold
-  TRANSITION:         600,
-  PROBLEM_SCROLL:     2000,
-  PROBLEM_LINGER:     12500,  // clip 02 ≈ 14.4s
-  DEMO_TRANSITION:    2000,
-  CONNECT_LINGER:     5000,   // clip 03 head: shows wallet pill
-  PROVISION_LINGER:   10000,  // clip 03 tail + provision settle
-  REJECT_LINGER:      11500,  // clip 04 ≈ 11.8s
-  ALLOWLIST_LINGER:   8000,
-  APPROVE_LINGER:     14000,  // clip 05 ≈ 14.2s
-  SPONSORS_TRANSITION:1500,
-  SPONSORS_LINGER:    14500,  // clip 06 ≈ 16.1s
-  CLOSE_LINGER:       8000,   // clip 07 ≈ 7.8s
-};
-
-// -- chrome / phantom helpers (extracted from phantom-e2e.mjs) ---------------
+const t0 = Date.now();
+const beats = [];
+function beat(name, note = "") {
+  const t = (Date.now() - t0) / 1000;
+  beats.push({ name, t: Number(t.toFixed(3)), note });
+  console.log(`  beat ${t.toFixed(3).padStart(7)}s  ${name.padEnd(28)} ${note}`);
+}
+function flushBeats() {
+  fs.writeFileSync(BEAT_LOG, JSON.stringify({ recorded_at: new Date().toISOString(), total_seconds: (Date.now() - t0) / 1000, beats }, null, 2));
+  console.log(`\nbeat log → ${BEAT_LOG}`);
+}
 
 function findChrome() {
   if (process.env.CHROME_BIN) return process.env.CHROME_BIN;
@@ -82,452 +57,289 @@ function findChrome() {
     const p = path.join(root, v, "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing");
     if (fs.existsSync(p)) return p;
   }
-  throw new Error("no chrome-for-testing found in " + root);
+  throw new Error("no chrome-for-testing found");
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-let stepNum = 0;
-async function snap(page, name) {
-  const file = path.join(SCREENS_DIR, `record-${String(++stepNum).padStart(2, "0")}-${name}.png`);
-  try {
-    await page.screenshot({ path: file, fullPage: false });
-  } catch (e) {
-    console.warn(`  (snap failed: ${e.message})`);
-  }
-}
-
-function log(msg) { console.log(`\n▶ ${msg}`); }
-
-async function waitForText(page, text, { timeout = 30000, exact = false } = {}) {
-  await page.waitForFunction(
-    (t, isExact) => {
-      const norm = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
-      const target = norm(t);
-      const all = document.querySelectorAll('button, a, [role="button"], div, span, label, h1, h2, h3, p');
-      for (const el of all) {
-        const txt = norm(el.textContent ?? "");
-        if (!txt) continue;
-        const match = isExact ? txt === target : txt.includes(target);
-        if (match && el.offsetParent !== null) return true;
-      }
-      return false;
-    },
-    { timeout, polling: 250 },
-    text,
-    exact
-  );
-}
-
-async function clickText(page, text, { timeout = 30000, exact = false, requireEnabled = false } = {}) {
-  await waitForText(page, text, { timeout, exact });
-  const clicked = await page.evaluate(
-    (t, isExact, mustBeEnabled) => {
-      const norm = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
-      const target = norm(t);
-      const isDisabled = (el) => {
-        if (el.disabled) return true;
-        if (el.getAttribute("aria-disabled") === "true") return true;
-        const cs = window.getComputedStyle(el);
-        if (cs.pointerEvents === "none" || parseFloat(cs.opacity) < 0.5) return true;
-        return false;
-      };
-      const sel = ['button', 'a', '[role="button"]', '[type="submit"]', 'label', 'span', 'div'];
-      for (const s of sel) {
-        const els = Array.from(document.querySelectorAll(s));
-        for (const el of els) {
-          const txt = norm(el.textContent ?? "");
-          if (!txt) continue;
-          const match = isExact ? txt === target : txt.includes(target);
-          if (match && el.offsetParent !== null) {
-            if (mustBeEnabled && isDisabled(el)) continue;
-            el.scrollIntoView({ block: "center" });
-            el.click();
-            return true;
-          }
-        }
-      }
-      return false;
-    },
-    text, exact, requireEnabled
-  );
-  if (!clicked) throw new Error(`could not click text "${text}"`);
-}
-
-async function clickWhenEnabled(page, text, { timeout = 30000, exact = false } = {}) {
-  const start = Date.now();
-  let lastErr;
-  while (Date.now() - start < timeout) {
-    try {
-      await clickText(page, text, { timeout: 2000, exact, requireEnabled: true });
-      return;
-    } catch (e) {
-      lastErr = e;
-      await sleep(300);
+async function smoothScroll(page, distance, durationMs) {
+  await page.evaluate(async (distance, durationMs) => {
+    const steps = Math.max(20, Math.floor(durationMs / 16));
+    const stepMs = durationMs / steps;
+    for (let i = 0; i < steps; i++) {
+      const t = (i + 1) / steps;
+      const prev = i / steps;
+      const ease = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+      window.scrollBy(0, distance * (ease(t) - ease(prev)));
+      await new Promise(r => setTimeout(r, stepMs));
     }
-  }
-  throw lastErr ?? new Error(`button "${text}" never became enabled`);
+  }, distance, durationMs);
 }
+
+async function smoothMove(page, x, y, durationMs = 600) {
+  const steps = Math.max(10, Math.floor(durationMs / 40));
+  await page.mouse.move(x, y, { steps });
+}
+
+// ---- Phantom popup helpers ----
 
 const _seenPopupTargets = new Set();
 
 async function waitForPhantomPopup(browser, { timeout = 25000 } = {}) {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
     const targets = browser.targets();
-    const phantomTarget = targets.find((t) => {
+    for (const t of targets) {
       const url = t.url();
-      const id = t._targetId ?? url;
-      return url.startsWith(`chrome-extension://${PHANTOM_ID}/`) &&
-             (url.includes("notification") || url.includes("popup")) &&
-             !_seenPopupTargets.has(id);
-    });
-    if (phantomTarget) {
-      const id = phantomTarget._targetId ?? phantomTarget.url();
+      if (!url.includes(`chrome-extension://${PHANTOM_ID}`)) continue;
+      if (!url.includes("notification.html") && !url.includes("popup.html")) continue;
+      if (url.includes("/onboarding")) continue;
+      const id = `${t._targetId ?? url}`;
+      if (_seenPopupTargets.has(id)) continue;
       _seenPopupTargets.add(id);
-      const popup = await phantomTarget.page();
-      if (popup) {
-        await popup.waitForFunction(() => document.body && document.body.innerText.length > 5, { timeout: 10000 }).catch(() => {});
-        popup.on("close", () => _seenPopupTargets.delete(id));
-        return popup;
-      }
+      const page = await t.page().catch(() => null);
+      if (page) return page;
     }
     await sleep(250);
   }
-  return null;
+  throw new Error(`no Phantom popup within ${timeout}ms`);
 }
 
-async function approvePopup(browser, demoPage, { label, approvalText = "Approve", timeout = 25000 } = {}) {
-  log(`waiting for Phantom popup [${label}]`);
+async function approvePopup(browser, { label, approvalText = "Approve", timeout = 25000 } = {}) {
   const popup = await waitForPhantomPopup(browser, { timeout });
-  if (!popup) throw new Error(`Phantom popup [${label}] never opened`);
-
-  await popup.bringToFront();
-  await sleep(400);
-  const vp = popup.viewport() ?? { width: 380, height: 600 };
-  await popup.mouse.click(vp.width / 2, vp.height / 2);
-  await sleep(400);
-  for (let i = 0; i < 12; i++) {
-    const locked = await popup.evaluate(() =>
-      (document.body?.innerText ?? "").toLowerCase().includes("click this dialog")
-    );
-    if (!locked) break;
-    await popup.mouse.click(vp.width / 2, vp.height / 2);
-    await sleep(500);
-  }
-
-  const blocked = await popup.evaluate(() =>
-    (document.body?.innerText ?? "").toLowerCase().includes("request blocked")
+  await popup.waitForFunction(
+    (text) => [...document.querySelectorAll("button,div[role='button']")]
+      .some(b => (b.textContent || "").trim().includes(text) && !b.disabled),
+    { timeout },
+    approvalText,
   );
-  if (blocked) {
-    console.log(`  Phantom flagged dApp; proceeding`);
-    await clickText(popup, "Proceed anyway", { timeout: 5000 });
+  const handle = await popup.evaluateHandle((text) => {
+    const candidates = [...document.querySelectorAll("button,div[role='button']")];
+    return candidates.find(b => {
+      const t = (b.textContent || "").trim();
+      const r = b.getBoundingClientRect();
+      return t.includes(text) && !b.disabled && r.width > 0;
+    }) ?? null;
+  }, approvalText);
+  const el = handle.asElement();
+  if (!el) throw new Error(`approvePopup(${label}): no ${approvalText} button`);
+  await el.click();
+  beat(`phantom-${label}-approved`);
+}
+
+async function openPhantomPopup(browser) {
+  const sw = browser.targets().find(t => t.type() === "service_worker" && t.url().includes(PHANTOM_ID));
+  if (!sw) return null;
+  const page = await browser.newPage();
+  await page.goto(`chrome-extension://${PHANTOM_ID}/popup.html`);
+  return page;
+}
+
+async function unlockOrOnboard(browser) {
+  const popup = await openPhantomPopup(browser);
+  if (!popup) throw new Error("Phantom service worker not found");
+  await sleep(1200);
+  const onboarding = popup.url().includes("/onboarding");
+  if (onboarding) throw new Error("Phantom not onboarded — run scripts/phantom-e2e.mjs once first to import the test key");
+  const hasPwd = await popup.evaluate(() => !!document.querySelector("input[type='password']"));
+  if (hasPwd) {
+    await popup.type("input[type='password']", PHANTOM_PASSWORD);
+    await popup.keyboard.press("Enter");
     await sleep(1500);
+    beat("phantom-unlocked");
   }
-
-  const tries = [approvalText, "Confirm", "Connect", "Approve"];
-  let ok = false;
-  for (const t of tries) {
-    try {
-      await clickWhenEnabled(popup, t, { timeout: 20000 });
-      ok = true;
-      console.log(`  approved with "${t}"`);
-      break;
-    } catch {}
-  }
-  if (!ok) throw new Error(`no enabled approval button found in [${label}] popup`);
-  await sleep(800);
-  // Bring the demo page back into focus so the recording stays on it.
-  await demoPage.bringToFront();
+  await popup.close().catch(() => {});
 }
 
-async function unlockPhantomIfLocked(browser) {
-  // Open the popup; if a password input is present, type and Unlock.
-  const popup = await browser.newPage();
-  await popup.setViewport({ width: 380, height: 600 });
-  await popup.goto(`chrome-extension://${PHANTOM_ID}/popup.html`, { waitUntil: "domcontentloaded" });
-  await sleep(1500);
-  const needsUnlock = await popup.evaluate(() => {
-    const t = (document.body?.innerText ?? "").toLowerCase();
-    return t.includes("unlock") || t.includes("welcome back") || !!document.querySelector('input[type="password"]');
-  });
-  if (needsUnlock) {
-    log("unlocking Phantom");
-    await popup.type('input[type="password"]', PHANTOM_PASSWORD, { delay: 30 });
-    await clickText(popup, "Unlock");
-    await sleep(2500);
-  }
-  await popup.close();
-}
+// ---- The recording flow ----
 
-// -- closing-card overlay ----------------------------------------------------
+async function runRecording(browser) {
+  beat("recording-start");
 
-async function paintClosingCard(page) {
-  await page.evaluate(() => {
-    const mkEl = (tag, css, text) => {
-      const el = document.createElement(tag);
-      if (css) el.style.cssText = css;
-      if (text != null) el.textContent = text;
-      return el;
-    };
-    document.querySelectorAll("body > *").forEach((n) => (n.style.display = "none"));
-
-    const card = mkEl(
-      "div",
-      `position: fixed; inset: 0; display: flex; flex-direction: column;
-       align-items: center; justify-content: center;
-       background:
-         radial-gradient(1200px 700px at 80% -8%, rgba(59, 102, 255, 0.20), transparent 60%),
-         radial-gradient(900px 600px at -10% 30%, rgba(59, 102, 255, 0.10), transparent 60%),
-         radial-gradient(900px 700px at 50% 110%, rgba(59, 102, 255, 0.08), transparent 60%),
-         #0a0c12;
-       font-family: 'Geist', 'Inter', -apple-system, system-ui, sans-serif;
-       color: #e8eaef;
-       z-index: 999999;`,
-      ""
-    );
-
-    const logoRow = mkEl("div", "display:flex; align-items:center; gap:20px; margin-bottom: 28px;", "");
-    const mark = mkEl(
-      "div",
-      `width: 88px; height: 88px;
-       display: flex; align-items: center; justify-content: center;
-       border: 2px solid #3b66ff; color: #3b66ff;
-       border-radius: 14px;
-       font-family: 'Geist Mono', ui-monospace, monospace;
-       font-size: 56px; font-weight: 600;
-       background: rgba(59, 102, 255, 0.10);
-       box-shadow: 0 0 40px rgba(59, 102, 255, 0.30);`,
-      "M"
-    );
-    const wordmark = mkEl("div", "font-size: 88px; font-weight: 700; letter-spacing: -0.04em;", "MetaHook");
-    logoRow.appendChild(mark);
-    logoRow.appendChild(wordmark);
-    card.appendChild(logoRow);
-
-    const tagline = mkEl(
-      "div",
-      `font-family: 'Geist', sans-serif;
-       font-size: 30px; color: #9aa1b3; max-width: 1200px; text-align: center;
-       line-height: 1.35; letter-spacing: -0.015em; margin-bottom: 56px;`,
-      ""
-    );
-    tagline.appendChild(document.createTextNode("Compose your compliance stack the same way you"));
-    tagline.appendChild(mkEl("br", "", ""));
-    tagline.appendChild(document.createTextNode("compose middleware in Express."));
-    card.appendChild(tagline);
-
-    const links = mkEl(
-      "div",
-      `display: flex; gap: 28px;
-       font-family: 'Geist Mono', ui-monospace, monospace;
-       font-size: 24px; color: #5a82ff;`,
-      ""
-    );
-    links.appendChild(mkEl("span", "", "yonkoo11.github.io/multihook"));
-    links.appendChild(mkEl("span", "color:#5d6478", "·"));
-    links.appendChild(mkEl("span", "", "github.com/Yonkoo11/multihook"));
-    card.appendChild(links);
-
-    document.body.appendChild(card);
-  });
-}
-
-// -- main recording flow -----------------------------------------------------
-
-async function recordFlow(browser) {
+  // Beat 01-hero (audio 0.5-8.5s)
   const page = await browser.newPage();
   await page.setViewport({ width: 1920, height: 1080 });
+  await page.goto(`${DEMO_URL}/`, { waitUntil: "domcontentloaded" });
+  beat("landing-loaded");
+  await sleep(2000);
+  await smoothScroll(page, 800, 6000);
+  beat("landing-hero-scrolled");
+  await sleep(1000);
 
-  // ---- Pre-roll: navigate to landing BEFORE starting the recorder so the
-  // first frame the recorder captures is the rendered hero, not a blank tab.
-  log("loading landing page (pre-roll)");
-  await page.goto(DEMO_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
+  // Beat 02-problem (audio 10-24s)
+  await smoothScroll(page, 1400, 9000);
+  beat("landing-problem-visible");
+  await sleep(3000);
+
+  // Beat 03-connect (audio 32-43s)
+  await page.goto(`${DEMO_URL}/demo/`, { waitUntil: "domcontentloaded" });
+  beat("demo-page-loaded");
   await page.waitForFunction(
-    () => document.querySelector(".pipeline-svg, .hero, h1") != null,
-    { timeout: 15000 }
+    () => document.getElementById("connectBtn") || document.querySelector(".wallet-pill"),
+    { timeout: 15000 },
   );
-  await sleep(1500);
-  await page.bringToFront();
+  await sleep(800);
 
-  // ---- Start recording ----
-  const recorder = new PuppeteerScreenRecorder(page, RECORDER_OPTIONS);
-  await recorder.start(RECORDING_OUT);
-  log(`recording started -> ${RECORDING_OUT}`);
-
-  try {
-    // === Beat 01: HERO ===
-    log(`beat 01 hero linger (${PACE.HERO_LINGER}ms)`);
-    await snap(page, "01-hero");
-    await sleep(PACE.HERO_LINGER);
-
-    // === Beat 02: PROBLEM (scroll to "The Problem" section) ===
-    log("beat 02 scroll to problem");
-    await page.evaluate(() => window.scrollTo({ top: 750, left: 0, behavior: "smooth" }));
-    await sleep(PACE.PROBLEM_SCROLL);
-    await snap(page, "02-problem");
-    await sleep(PACE.PROBLEM_LINGER - PACE.PROBLEM_SCROLL);
-
-    // === Transition: Demo ===
-    log("transition to demo page");
-    await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
-    await page.goto(DEMO_URL.replace(/\/?$/, "/") + "demo/", { waitUntil: "domcontentloaded", timeout: 20000 });
-    await page.waitForFunction(
-      () => document.querySelector("#provisionBtn") != null,
-      { timeout: 15000 }
-    );
-    await sleep(PACE.DEMO_TRANSITION);
-    await snap(page, "03-demo-loaded");
-
-    // === Beat 03: CONNECT + PROVISION ===
-    log("beat 03 connect + provision");
-    // Eager-connect race — wait briefly to see if Phantom auto-connects
-    await sleep(1500);
-    let connected = await page.evaluate(() => !!document.querySelector(".wallet-pill"));
-    if (!connected) {
-      log("clicking Connect Phantom");
-      const popupPromise = approvePopup(browser, page, { label: "connect", approvalText: "Connect" }).catch((e) => e);
-      try {
-        await page.click("#connectBtn");
-      } catch (e) {
-        console.log(`  (connect click race: ${e.message})`);
-      }
-      await popupPromise;
-    } else {
-      log("wallet auto-connected");
-    }
-    await page.waitForFunction(
-      () => document.querySelector(".wallet-pill")?.textContent?.includes("devnet"),
-      { timeout: 15000 }
-    );
-    await page.waitForFunction(
-      () => !document.getElementById("provisionBtn")?.disabled,
-      { timeout: 30000 }
-    );
-    await sleep(PACE.CONNECT_LINGER);
-
-    // Reset state for a clean recording: nuke localStorage + reload
-    log("resetting demo state for clean recording");
-    await page.evaluate(() => {
-      Object.keys(localStorage).forEach((k) => {
-        if (k.startsWith("multihook:demo:")) localStorage.removeItem(k);
-      });
-    });
-    await page.goto(DEMO_URL.replace(/\/?$/, "/") + "demo/", { waitUntil: "domcontentloaded", timeout: 20000 });
-    await page.waitForFunction(
-      () => document.querySelector(".wallet-pill")?.textContent?.includes("devnet"),
-      { timeout: 25000 }
-    );
-    await page.waitForFunction(
-      () => !document.getElementById("provisionBtn")?.disabled,
-      { timeout: 30000 }
-    );
-    await snap(page, "04-pre-provision");
-
-    // Click Provision and approve the (single, batched) Phantom popup. The
-    // dApp bundles all 7-10 setup instructions into ONE Confirm Transactions
-    // popup. Phantom needs ~10-20s to simulate the bundle before its Confirm
-    // button enables. Use the proven approach from phantom-e2e.mjs: poll for
-    // "provision complete" while attempting up to 6 popup approvals.
-    log("clicking Provision");
-    await page.click("#provisionBtn");
-    let popupCount = 0;
-    while (popupCount < 6) {
-      const status = await page.evaluate(() =>
-        (document.getElementById("provisionLog")?.textContent ?? "").slice(-300)
-      );
-      if (status.includes("provision complete")) { log("provision complete"); break; }
-      try {
-        await approvePopup(browser, page, { label: `provision-${++popupCount}`, approvalText: "Confirm", timeout: 25000 });
-      } catch (e) {
-        console.log(`  no popup yet (${e.message}); sleeping 2s`);
-        await sleep(2000);
-      }
-    }
-    await page.waitForFunction(
-      () => (document.getElementById("provisionLog")?.textContent ?? "").includes("provision complete"),
-      { timeout: 60000 }
-    );
-    await snap(page, "05-provisioned");
-    await sleep(PACE.PROVISION_LINGER);
-
-    // === Beat 04: REJECT ===
-    log("beat 04 send 100 expect reject");
-    await page.click("#transferFailBtn");
-    await approvePopup(browser, page, { label: "fail-transfer", approvalText: "Confirm" });
-    await page.waitForFunction(
-      () => (document.getElementById("transferFailLog")?.textContent ?? "").includes("policy.allowlist.fail"),
-      { timeout: 30000 }
-    );
-    await snap(page, "06-rejected");
-    await sleep(PACE.REJECT_LINGER);
-
-    // === Beat 05a: ALLOWLIST ===
-    log("beat 05a add to allowlist");
-    await page.click("#addAllowBtn");
-    await approvePopup(browser, page, { label: "add-allow", approvalText: "Confirm" });
-    await page.waitForFunction(
-      () => (document.getElementById("addAllowLog")?.textContent ?? "").includes("added to allowlist"),
-      { timeout: 30000 }
-    );
-    await snap(page, "07-allowlisted");
-    await sleep(PACE.ALLOWLIST_LINGER);
-
-    // === Beat 05b: APPROVE + AUDIT EVENT ===
-    log("beat 05b retry expect approve");
-    await page.click("#transferOkBtn");
-    await approvePopup(browser, page, { label: "ok-transfer", approvalText: "Confirm" });
-    await page.waitForFunction(
-      () => (document.getElementById("transferOkLog")?.textContent ?? "").includes("MetaHookAuditEvent decoded"),
-      { timeout: 45000 }
-    );
-    // Scroll to bring the audit receipt into frame
-    await page.evaluate(() => {
-      const el = document.getElementById("auditEventBox");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-    await snap(page, "08-approved");
-    await sleep(PACE.APPROVE_LINGER);
-
-    // === Beat 06: SPONSORS DEPTH AUDIT ===
-    log("beat 06 sponsors page");
-    await page.goto(DEMO_URL.replace(/\/?$/, "/") + "sponsors/", { waitUntil: "domcontentloaded", timeout: 20000 });
-    await sleep(PACE.SPONSORS_TRANSITION);
-    await snap(page, "09-sponsors");
-    // Slow scroll through the table for visual variety
-    await page.evaluate(async () => {
-      const dur = 11000;
-      const start = performance.now();
-      while (performance.now() - start < dur) {
-        window.scrollBy({ top: 1, left: 0, behavior: "instant" });
-        await new Promise((r) => setTimeout(r, 16));
-      }
-    });
-    await sleep(PACE.SPONSORS_LINGER - 11000);
-
-    // === Beat 07: CLOSE CARD ===
-    log("beat 07 closing card");
-    await page.goto(DEMO_URL, { waitUntil: "domcontentloaded", timeout: 20000 });
-    await paintClosingCard(page);
-    await snap(page, "10-close");
-    await sleep(PACE.CLOSE_LINGER);
-
-  } finally {
-    await recorder.stop();
-    log("recording stopped");
+  let connected = await page.evaluate(() => !!document.querySelector(".wallet-pill"));
+  if (!connected) {
+    const btn = await page.$("#connectBtn");
+    const box = await btn.boundingBox();
+    await smoothMove(page, box.x + box.width / 2, box.y + box.height / 2, 700);
+    const popupP = approvePopup(browser, { label: "connect", approvalText: "Connect", timeout: 20000 }).catch(e => e);
+    await page.click("#connectBtn");
+    beat("connect-clicked");
+    const r = await popupP;
+    if (r instanceof Error) console.log(`  connect popup note: ${r.message}`);
+  } else {
+    beat("connect-auto");
   }
+  await page.waitForFunction(() => document.querySelector(".wallet-pill"), { timeout: 15000 });
+  beat("wallet-connected");
+
+  // Reset state for a deterministic provision step
+  await page.evaluate(() => {
+    Object.keys(localStorage).forEach(k => k.startsWith("multihook:demo:") && localStorage.removeItem(k));
+  });
+  await page.goto(`${DEMO_URL}/demo/`, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.querySelector(".wallet-pill"), { timeout: 15000 });
+  await page.waitForFunction(() => !document.getElementById("provisionBtn")?.disabled, { timeout: 30000 });
+  await sleep(1500);
+
+  const pBtn = await page.$("#provisionBtn");
+  const pBox = await pBtn.boundingBox();
+  await smoothMove(page, pBox.x + pBox.width / 2, pBox.y + pBox.height / 2, 700);
+  beat("provision-pre-click");
+  await page.click("#provisionBtn");
+  beat("provision-clicked");
+
+  let popupN = 0;
+  while (popupN < 4) {
+    const status = await page.evaluate(() => (document.getElementById("provisionLog")?.textContent ?? "").slice(-300));
+    if (status.includes("provision complete")) break;
+    if (status.includes("provision failed")) throw new Error("provision failed in dApp");
+    try {
+      await approvePopup(browser, { label: `provision-${++popupN}`, approvalText: "Confirm", timeout: 20000 });
+    } catch (e) {
+      console.log(`  no popup yet (${e.message}); waiting…`);
+      await sleep(2500);
+    }
+  }
+  await page.waitForFunction(
+    () => (document.getElementById("provisionLog")?.textContent ?? "").includes("provision complete"),
+    { timeout: 60000 },
+  );
+  beat("provision-complete");
+  await sleep(1500);
+
+  // Beat 04-reject
+  const tfBtn = await page.$("#transferFailBtn");
+  const tfBox = await tfBtn.boundingBox();
+  await smoothMove(page, tfBox.x + tfBox.width / 2, tfBox.y + tfBox.height / 2, 600);
+  await page.click("#transferFailBtn");
+  beat("transfer-fail-clicked");
+  await approvePopup(browser, { label: "fail-tx", approvalText: "Confirm", timeout: 20000 });
+  await page.waitForFunction(() => {
+    const t = document.getElementById("transferFailLog")?.textContent ?? "";
+    return t.includes("policy.allowlist.fail");
+  }, { timeout: 30000 });
+  beat("transfer-fail-rejected");
+  await sleep(1500);
+
+  // Beat 05-allow
+  const aBtn = await page.$("#addAllowBtn");
+  const aBox = await aBtn.boundingBox();
+  await smoothMove(page, aBox.x + aBox.width / 2, aBox.y + aBox.height / 2, 600);
+  await page.click("#addAllowBtn");
+  beat("add-allow-clicked");
+  await approvePopup(browser, { label: "add-allow", approvalText: "Confirm", timeout: 20000 });
+  await page.waitForFunction(
+    () => document.getElementById("addAllowLog")?.textContent?.includes("added to allowlist"),
+    { timeout: 30000 },
+  );
+  beat("allowlist-added");
+  await sleep(1200);
+
+  // Beat 06-approve + receipt
+  const okBtn = await page.$("#transferOkBtn");
+  const okBox = await okBtn.boundingBox();
+  await smoothMove(page, okBox.x + okBox.width / 2, okBox.y + okBox.height / 2, 600);
+  await page.click("#transferOkBtn");
+  beat("transfer-ok-clicked");
+  await approvePopup(browser, { label: "ok-tx", approvalText: "Confirm", timeout: 20000 });
+  await page.waitForFunction(() => {
+    const t = document.getElementById("transferOkLog")?.textContent ?? "";
+    return t.includes("MetaHookAuditEvent decoded") || t.includes("PASS");
+  }, { timeout: 45000 });
+  beat("transfer-ok-receipt-rendered");
+  await sleep(2000);
+
+  await page.evaluate(() => {
+    document.getElementById("auditEventBox")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  await sleep(2500);
+  beat("receipt-dwell");
+
+  // Pull tx sig from the dApp log for Solscan link
+  const okLog = await page.evaluate(() => document.getElementById("transferOkLog")?.textContent ?? "");
+  const sigMatch = okLog.match(/[1-9A-HJ-NP-Za-km-z]{60,90}/);
+  const sig = sigMatch ? sigMatch[0] : null;
+
+  // Beat 06b — Solscan cutaway
+  if (sig) {
+    const solscan = await browser.newPage();
+    await solscan.setViewport({ width: 1920, height: 1080 });
+    await solscan.goto(`https://solscan.io/tx/${sig}?cluster=devnet`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    beat("solscan-opened", `tx=${sig.slice(0, 12)}…`);
+    await sleep(4000);
+    await smoothScroll(solscan, 600, 3000);
+    await sleep(2500);
+    beat("solscan-dwell");
+  } else {
+    console.log("  (no tx sig parsed — skipping Solscan cutaway)");
+  }
+
+  // Beat 07-compose — docs/policies
+  const docsPage = await browser.newPage();
+  await docsPage.setViewport({ width: 1920, height: 1080 });
+  await docsPage.goto(`${DEMO_URL}/docs/policies/`, { waitUntil: "domcontentloaded" });
+  beat("docs-policies-loaded");
+  await sleep(2000);
+  await smoothScroll(docsPage, 1500, 7000);
+  beat("docs-scrolled");
+  await sleep(2000);
+
+  // Beat 08-close — closing card overlay
+  await docsPage.evaluate(() => {
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;background:linear-gradient(135deg,#0a0e27 0%,#1a1f4a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;color:#eaeaea;font-family:system-ui,-apple-system,sans-serif;text-align:center;";
+    const h = document.createElement("h1");
+    h.textContent = "Multi-Hook";
+    h.style.cssText = "font-size:96px;font-weight:700;letter-spacing:-0.04em;margin:0 0 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;";
+    const sub = document.createElement("p");
+    sub.textContent = "Composable Token-2022 compliance.";
+    sub.style.cssText = "font-size:32px;font-weight:300;margin:0 0 48px;color:#a8a8b8;";
+    const cta = document.createElement("p");
+    cta.textContent = "yonkoo11.github.io/multihook  ·  github.com/Yonkoo11/multihook";
+    cta.style.cssText = "font-size:20px;color:#6366f1;font-family:'SF Mono',Menlo,monospace;letter-spacing:0.02em;";
+    overlay.append(h, sub, cta);
+    document.body.appendChild(overlay);
+  });
+  beat("closing-card-shown");
+  await sleep(7000);
+
+  beat("recording-end");
 }
 
-async function main() {
-  if (!fs.existsSync(PHANTOM_KEY_FILE)) throw new Error(`missing ${PHANTOM_KEY_FILE}`);
-  if (!fs.existsSync(EXT_DIR)) throw new Error(`missing ${EXT_DIR}`);
+(async () => {
+  if (!fs.existsSync(EXT_DIR)) throw new Error(`missing Phantom CRX at ${EXT_DIR}`);
+  fs.mkdirSync(PROFILE_DIR, { recursive: true });
 
   const chrome = findChrome();
   console.log(`chrome:    ${chrome}`);
   console.log(`profile:   ${PROFILE_DIR}`);
   console.log(`extension: ${EXT_DIR}`);
-  console.log(`demo:      ${DEMO_URL}`);
-  console.log(`output:    ${RECORDING_OUT}`);
+  console.log(`demo url:  ${DEMO_URL}`);
+  console.log(`beat log:  ${BEAT_LOG}\n`);
 
   const browser = await puppeteer.launch({
     executablePath: chrome,
@@ -540,26 +352,23 @@ async function main() {
       "--no-first-run",
       "--no-default-browser-check",
       "--window-size=1920,1080",
-      "--disable-features=DialMediaRouteProvider",
+      "--window-position=0,0",
     ],
   });
 
-  await sleep(2000);
+  await sleep(2500);
 
   try {
-    await unlockPhantomIfLocked(browser);
-    await recordFlow(browser);
-    console.log(`\n🎬 RECORDING DONE -> ${RECORDING_OUT}`);
+    await unlockOrOnboard(browser);
+    await runRecording(browser);
+    console.log("\n✅ recording flow completed");
   } catch (e) {
-    console.error(`\n❌ recording failed:`, e.message);
+    console.error(`\n❌ recording flow failed: ${e.message}`);
     console.error(e.stack);
     process.exitCode = 1;
   } finally {
-    await browser.close();
+    flushBeats();
+    await sleep(2000);
+    await browser.close().catch(() => {});
   }
-}
-
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+})();

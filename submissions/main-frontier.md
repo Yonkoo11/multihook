@@ -22,7 +22,9 @@ Smaller RWA token issuers can't access the proprietary compliance stacks that po
 ## Long description
 
 ### The problem
-The Token-2022 transfer-hook extension shipped in 2024 with no public-good infrastructure for composing multiple compliance policies onto a single mint. RWA issuers either (a) write a single bespoke hook per mint or (b) buy into Anchorage / Fireblocks / Securitize at $200K+ MSRP. There is no third option.
+The Token-2022 transfer-hook extension shipped in 2024 with no public-good infrastructure for composing multiple compliance policies onto a single mint. RWA issuers either (a) write a single bespoke hook per mint or (b) buy into Anchorage / Fireblocks / Securitize at $500K+ vendor contracts (BlackRock paid Securitize $525K + 0.50% management fee for BUIDL — March 2024). There is no third option for issuers who can't justify that spend.
+
+**What MetaHook is NOT:** a transfer-agent registration, a KYC vendor, a sanctions feed, or legal counsel. It's the on-chain enforcement layer of a compliance stack — slots beneath your KYC vendor and sanctions feed and makes those policies composable instead of bespoke per mint.
 
 ### The product
 **Four Anchor programs, deployed devnet, MIT-licensed:**
@@ -72,7 +74,14 @@ Plus the **public policy interface spec** at `POLICY_INTERFACE.md` — the load-
 This project includes conceptual learning from Verigate (RWA Demo Day, BSC, BAS attestations, 7 contracts + 75 tests). **All Solana / Rust / Token-2022 code is new**. Different VM (BSC = EVM; Multi-Hook = Solana SVM), different language (Solidity vs Rust), no code lifted.
 
 ## Memorable takeaway
-Token-2022 launched the transfer hook extension in 2024. Until now, shipping production compliance with it meant either (a) writing a bespoke hook per mint or (b) buying Anchorage / Fireblocks / Securitize at $200K+. Multi-Hook is the missing piece: a meta-hook that lets you compose existing policy primitives into a custom compliance stack the same way you compose middleware in Express. Fork a child policy, deploy, append to your `ExtraAccountMetaList`, and you've added a new compliance rule to a live mint **without touching the hook's code**.
+Token-2022 launched the transfer hook extension in 2024. Until now, shipping production compliance with it meant either (a) writing a bespoke hook per mint or (b) buying Anchorage / Fireblocks / Securitize at $500K+ (BlackRock BUIDL March 2024). Multi-Hook is the missing piece: a meta-hook that composes existing policy primitives into a per-mint compliance stack via a config PDA. Deploy your policy, call `metahook::add_policy(your_program_id, your_pda)`, re-init the ExtraAccountMetaList, and you've added a new compliance rule to a live mint **without touching the meta-hook code OR the existing policies**. The composability is real because the meta-hook reads its policy set from a per-mint PDA at every transfer — no hardcoded program IDs anywhere in the dispatcher.
 
 ## Team
-Solo. Mustapha (yonkoo11).
+Solo. Mustapha (yonkoo11). Background: medical intern building Solana / smart-contract security tooling on the side. Hit the Token-2022 transfer-hook integration wall on a prior RWA project (Verigate — BSC, BAS attestations, 7 contracts + 75 tests) and saw the gap: there was no on-chain enforcement primitive that composed multiple policies. Multi-Hook is that primitive. Solo build because the right shape for a public-goods primitive is one opinionated decision per layer, not committee design.
+
+## Roadmap (post-hackathon)
+1. External audit of `metahook` + reentrancy guard. Adevar Labs sidetrack submission specifically asks for the audit credits to fund this.
+2. `policy-jurisdiction-geofence` reference policy — gates on attestation of geo + KYC level via Verigate or EAS-equivalent attestor. Demonstrates the depth-4 CPI pattern.
+3. `realloc_extra_account_meta_list` instruction so issuers can add/remove policies in-place after launch (V1.1 requires close + recreate of the meta list).
+4. V0 transactions with Address Lookup Tables for >2 policies (current 2-policy bundled provision is at 1156/1232 bytes — adding a third policy needs ALT to fit).
+5. Squads multisig pattern wired into the live demo's policy authority (already documented in `POLICY_AUTHORITY.md` — needs to ship as configured default).

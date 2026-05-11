@@ -64,6 +64,7 @@ describe("multihook phase 1 gate", () => {
   let allowlistPda: PublicKey;
   let ofacPda: PublicKey;
   let extraMetaListPda: PublicKey;
+  let configPda: PublicKey;
 
   before(async () => {
     mint = Keypair.generate();
@@ -85,6 +86,11 @@ describe("multihook phase 1 gate", () => {
 
     [extraMetaListPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("extra-account-metas"), mint.publicKey.toBuffer()],
+      metahook.programId
+    );
+
+    [configPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("metahook-config"), mint.publicKey.toBuffer()],
       metahook.programId
     );
 
@@ -192,14 +198,32 @@ describe("multihook phase 1 gate", () => {
 
     await sendAndConfirmTransaction(provider.connection, tx, [payer, mint]);
 
+    // V1.1: per-mint config PDA carries the (program_id, policy_pda) pairs.
+    // Initialised before the ExtraAccountMetaList because the latter reads
+    // from it to discover which accounts to forward to the hook.
+    await metahook.methods
+      .initializeConfig(
+        [
+          { programId: allowlistProgram.programId, policyPda: allowlistPda },
+          { programId: sanctionsProgram.programId, policyPda: ofacPda },
+        ],
+        0, // Aggregation::And
+      )
+      .accountsPartial({
+        authority: policyAuthority.publicKey,
+        mint: mint.publicKey,
+        config: configPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
     await metahook.methods
       .initializeExtraAccountMetaList()
       .accountsPartial({
         payer: payer.publicKey,
         extraAccountMetaList: extraMetaListPda,
         mint: mint.publicKey,
-        allowlistAuthority: policyAuthority.publicKey,
-        sanctionsAuthority: policyAuthority.publicKey,
+        config: configPda,
         systemProgram: SystemProgram.programId,
       })
       .rpc();
@@ -332,6 +356,11 @@ describe("multihook phase 1 gate", () => {
       })
       .rpc();
 
+    // Local validator sometimes stalls between back-to-back sendAndConfirm
+    // calls; give it a slot to settle before the transfer-hook tx (which
+    // also has to fetch the ExtraAccountMetaList to resolve extra accounts).
+    await new Promise((r) => setTimeout(r, 600));
+
     const ix = await createTransferCheckedWithTransferHookInstruction(
       provider.connection,
       sourceAta,
@@ -369,11 +398,14 @@ describe("multihook phase 1 gate", () => {
       "audit event marker line should appear in transaction logs"
     );
 
-    // Confirm the policy verdicts logged in the human-readable line.
+    // V1.1 log format: `MetaHookAuditEvent: final=<bool> failed_policy=<i8>`.
+    // The old `allowlist=… sanctions=…` line was per-policy-named; the new
+    // line is index-based so it scales to N policies. failed_policy_index = -1
+    // means no policy short-circuited (full approval).
     assert.match(
       joined,
-      /MetaHookAuditEvent: allowlist=true sanctions=true final=true/,
-      "audit verdict line should record both policies passing"
+      /MetaHookAuditEvent: final=true failed_policy=-1/,
+      "audit verdict line should record full approval (failed_policy_index = -1)"
     );
 
     // Confirm a `Program data:` line was emitted (anchor `emit!` writes the

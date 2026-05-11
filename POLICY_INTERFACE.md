@@ -130,13 +130,38 @@ dispatch and forwards each account in order. As long as your `check_transfer`
 account context matches the order above (positions 0-4 fixed, 5+ flexible),
 your policy slots in.
 
-### Hardcoded program IDs (V1 limitation)
+### Per-mint MetaHookConfig (V1.1 — ships fully composable)
 
-Note: V1 of MetaHook hardcodes the two reference policy program IDs in its
-`process_execute` function as a safety check. Phase 2 lifts this to a config
-account so arbitrary policies can be wired without redeploying MetaHook.
-For now, third-party policies need to fork MetaHook and change these
-constants. Phase 2 is a fast follow.
+V1.1 of MetaHook stores the active policy set in a per-mint `MetaHookConfig`
+PDA at `seeds = [b"metahook-config", mint.key()]`. Each entry is a
+`(program_id, policy_pda)` pair. The meta-hook reads this on every transfer
+and validates the accounts forwarded by Token-2022 against the configured
+list (via `require_keys_eq!` in `process_execute`).
+
+To wire your policy into a mint:
+
+1. Deploy your policy. Note its program ID + the PDA your `seeds` derive for
+   the issuer's authority.
+2. The issuer calls `metahook::initialize_config` with the full policy list
+   for the mint (up to `MAX_POLICIES = 8`).
+3. The issuer calls `metahook::initialize_extra_account_meta_list` — this
+   reads the config and emits the right `ExtraAccountMetaList` ordering:
+   `[config_pda, reentrancy_guard, (program_0, pda_0), (program_1, pda_1), …]`
+4. The mint is wired. Token-2022 transfers will CPI through MetaHook → your
+   policy on every transfer.
+
+**Adding a policy after deployment:** call `metahook::add_policy(entry)`
+(authority-gated), then re-initialise the ExtraAccountMetaList (V1.1 limitation:
+the meta list is created with `system_program::create_account` — Phase 2 will
+add `realloc_extra_account_meta_list` for in-place updates).
+
+**Removing a policy:** call `metahook::remove_policy(program_id)`. Same
+re-init constraint applies.
+
+**No fork required.** The meta-hook code never changes when you ship a new
+policy — that's the composability primitive. The only "fork" needed is if
+you want to ship your own MetaHook instance with a different upgrade
+authority or aggregation mode.
 
 ---
 
@@ -163,11 +188,13 @@ spoof check).
 
 ## Compute budget
 
-Each child policy CPI costs ~5-20K CU. The current 2-policy V1 demo lands at
-33,346 CU (16% of the 200K Token-2022 transfer budget). You have headroom
-for ~6 more policies before bumping into limits. Beyond that, the right
-move is per-policy gating (skip non-applicable policies) rather than
-optimizing the policies themselves.
+Each child policy CPI costs ~5-20K CU. The current 2-policy V1.1 demo lands
+at ~33-40K CU (16-20% of the 200K Token-2022 transfer budget) plus an
+additional ~3K CU for the config-account read added in V1.1. Realistic
+ceiling is ~4-6 policies per mint before pressure. `MAX_POLICIES = 8` is the
+hard cap; beyond that the right move is per-policy gating (skip non-
+applicable policies based on tx context) rather than optimising the
+policies themselves.
 
 ---
 

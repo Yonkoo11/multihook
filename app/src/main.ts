@@ -238,13 +238,27 @@ function renderAuditEvent(evt: AuditEvent | null, receipt: SignedReceipt | null 
   ));
 
   // Receipt body — definition list (dt/dd pairs styled as a 2-column grid)
+  // Map per-policy verdict from the audit event's failed_policy_index.
+  // V1.1 emits {final, failed_policy_index} instead of named per-policy bools
+  // so the schema scales to N policies. We surface both the AND verdict and
+  // (when known) which named policy short-circuited the decision.
+  const POLICY_NAMES = ["allowlist", "sanctions"]; // matches MetaHookConfig order at provision
+  const failedIdx = evt.failedPolicyIndex;
+  const verdictRows: [string, string, string?][] = POLICY_NAMES.map((name, i) => {
+    let label: string;
+    let kind: "pass" | "fail";
+    if (failedIdx < 0) { label = "pass"; kind = "pass"; }
+    else if (i < failedIdx) { label = "pass"; kind = "pass"; }
+    else if (i === failedIdx) { label = "fail (short-circuit)"; kind = "fail"; }
+    else { label = "skipped"; kind = "fail"; }
+    return [`${name} verdict`, label, kind];
+  });
   const rows: [string, string, string?][] = [
     ["mint", shortPk(evt.mint)],
     ["source", shortPk(evt.source)],
     ["destination", shortPk(evt.destination)],
     ["amount", evt.amount],
-    ["allowlist verdict", evt.allowlistPass ? "pass" : "fail", evt.allowlistPass ? "pass" : "fail"],
-    ["sanctions verdict", evt.sanctionsPass ? "pass" : "fail", evt.sanctionsPass ? "pass" : "fail"],
+    ...verdictRows,
     ["final decision", evt.final ? "APPROVE" : "REJECT", evt.final ? "pass" : "fail"],
   ];
   while (ui.auditEventTable.firstChild)

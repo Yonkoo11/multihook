@@ -20,9 +20,13 @@ import {
 } from "@solana/spl-token";
 
 import {
+  Aggregation,
   Programs,
+  POLICY_ALLOWLIST_ID,
+  POLICY_SANCTIONS_ID,
   allowlistPda,
   extraMetaListPda,
+  metahookConfigPda,
   ofacPda,
 } from "./programs";
 import { destKp, mintKp, DemoState, sanctionedKp } from "./state";
@@ -61,8 +65,26 @@ async function pollForConfirmation(
 }
 
 /**
- * One-shot send. Phantom signs the wallet's part; if any extra Keypairs are
- * provided (e.g. the mint keypair), we partial-sign with them locally first.
+ * One-shot send. Phantom signs the wallet's part; extra Keypairs (e.g. the
+ * mint keypair) partial-sign first.
+ *
+ * Phantom-mediated signing introduces 5-15s of UX latency between
+ * `signTransaction()` request and the dApp receiving the signed tx. The fix
+ * surface here:
+ *   1. Re-fetch blockhash AFTER signing so the validity window starts at
+ *      send-time, not at instruction-build time. Avoids "blockhash not found"
+ *      drops when the user took 30s to read the popup.
+ *   2. Build with a placeholder blockhash, swap in a fresh one post-sign.
+ *      This means we ignore Phantom's view of validity but Phantom validates
+ *      the instructions, not the blockhash, so the signature stays valid.
+ *      Solana sigs cover the whole message including blockhash → so we MUST
+ *      blockhash-pin pre-sign. The right move is: fetch fresh just before
+ *      Phantom signs, AND include a priority fee so the tx lands in the next
+ *      block (within blockhash window of 60-90s).
+ *   3. Add ComputeBudget setComputeUnitPrice for priority fee. On devnet
+ *      this is mostly defensive; on mainnet it's load-bearing.
+ *   4. Surface Phantom-side errors verbosely (some versions return
+ *      `{ code: 4001, message: "User rejected" }` which we want to log).
  */
 async function sendTx(
   programs: Programs,
@@ -72,26 +94,44 @@ async function sendTx(
 ): Promise<string> {
   const conn = programs.provider.connection;
   const wallet = programs.provider.wallet;
-  const latest = await conn.getLatestBlockhash("confirmed");
+  // Use `finalized` commitment so the blockhash has the FULL 60-90s validity
+  // window from now, not the partial window of a recently-confirmed-but-not-
+  // yet-finalized block.
+  const latest = await conn.getLatestBlockhash("finalized");
 
-  // small CU bump in case of an unlucky validator estimate; well under our
-  // measured 33,346 ceiling but gives headroom for v2 policies later.
   const tx = new Transaction({
     feePayer: wallet.publicKey,
     blockhash: latest.blockhash,
     lastValidBlockHeight: latest.lastValidBlockHeight,
   })
+    // Priority fee: 1000 microLamports/CU * 400k CU = 0.0004 SOL. Trivial cost,
+    // ensures the tx lands in the next block on a busy validator.
+    .add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }))
     .add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }))
     .add(...ixs);
 
   for (const s of signers) tx.partialSign(s);
-  const signed = await wallet.signTransaction(tx);
+
+  let signed: Transaction;
+  try {
+    signed = await wallet.signTransaction(tx);
+  } catch (e: any) {
+    // Phantom rejected (user cancel, drainer detection, etc).
+    if (e?.code === 4001 || /rejected|cancel/i.test(String(e?.message ?? ""))) {
+      log("Phantom rejected the signature request (user cancel or wallet block)", "bad");
+    } else {
+      log(`Phantom signTransaction failed: ${e?.message ?? e}`, "bad");
+    }
+    throw e;
+  }
 
   try {
     const sig = await conn.sendRawTransaction(signed.serialize(), {
       skipPreflight: false,
       preflightCommitment: "confirmed",
+      maxRetries: 3,
     });
+    log(`→ submitted ${sig.slice(0, 12)}… (waiting for confirm)`, "info");
     // HTTP polling instead of WebSocket subscription. WS subscriptions hang
     // in some restricted-network environments (corp proxies, headless Chrome
     // CORS for wss://). Polling is slightly slower but works everywhere.
@@ -105,6 +145,8 @@ async function sendTx(
     if (logs?.length) {
       log("program logs:", "dim");
       for (const l of logs) log("  " + l, "dim");
+    } else {
+      log(`send/confirm error: ${e?.message ?? e}`, "bad");
     }
     throw e;
   }
@@ -141,15 +183,17 @@ export async function provision(
   const allowPda = allowlistPda(me);
   const ofac = ofacPda(me);
   const extras = extraMetaListPda(mint.publicKey);
+  const config = metahookConfigPda(mint.publicKey);
   const sourceAta = getAssociatedTokenAddressSync(mint.publicKey, me, false, TOKEN_2022_PROGRAM_ID);
   const destAta = getAssociatedTokenAddressSync(mint.publicKey, dest.publicKey, false, TOKEN_2022_PROGRAM_ID);
 
   // Probe on-chain state in parallel so we can skip what already exists.
-  const [allowInfo, ofacInfo, mintInfo, extrasInfo, sourceAtaInfo, destAtaInfo] = await Promise.all([
+  const [allowInfo, ofacInfo, mintInfo, extrasInfo, configInfo, sourceAtaInfo, destAtaInfo] = await Promise.all([
     conn.getAccountInfo(allowPda, "confirmed"),
     conn.getAccountInfo(ofac, "confirmed"),
     conn.getAccountInfo(mint.publicKey, "confirmed"),
     conn.getAccountInfo(extras, "confirmed"),
+    conn.getAccountInfo(config, "confirmed"),
     conn.getAccountInfo(sourceAta, "confirmed"),
     conn.getAccountInfo(destAta, "confirmed"),
   ]);
@@ -206,8 +250,32 @@ export async function provision(
     );
   } else log("mint already exists", "dim");
 
+  // V1.1: per-mint MetaHookConfig PDA. Stores the (program_id, policy_pda)
+  // pairs that make up this mint's compliance stack. The meta-hook program
+  // reads it on every transfer — no more hardcoded program IDs in the hook.
+  if (!configInfo) {
+    log("queue: init MetaHookConfig (allowlist + sanctions)", "info");
+    ixs.push(
+      await programs.metahook.methods
+        .initializeConfig(
+          [
+            { programId: POLICY_ALLOWLIST_ID, policyPda: allowPda },
+            { programId: POLICY_SANCTIONS_ID, policyPda: ofac },
+          ],
+          Aggregation.And,
+        )
+        .accountsPartial({
+          authority: me,
+          mint: mint.publicKey,
+          config,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction()
+    );
+  } else log("MetaHookConfig already exists", "dim");
+
   if (!extrasInfo) {
-    log("queue: init ExtraAccountMetaList", "info");
+    log("queue: init ExtraAccountMetaList (reads from config)", "info");
     ixs.push(
       await programs.metahook.methods
         .initializeExtraAccountMetaList()
@@ -215,8 +283,7 @@ export async function provision(
           payer: me,
           extraAccountMetaList: extras,
           mint: mint.publicKey,
-          allowlistAuthority: me,
-          sanctionsAuthority: me,
+          config,
           systemProgram: SystemProgram.programId,
         })
         .instruction()
@@ -424,14 +491,15 @@ export async function signAuditReceipt(
 ): Promise<SignedReceipt> {
   const issuedAt = new Date().toISOString();
   const lines = [
-    "MetaHookReceipt v1",
+    "MetaHookReceipt v2",
+    `event_version:${evt.version}`,
     `mint:${evt.mint}`,
     `src:${evt.source}`,
     `dst:${evt.destination}`,
     `amount:${evt.amount}`,
-    `allowlist:${evt.allowlistPass ? "pass" : "fail"}`,
-    `sanctions:${evt.sanctionsPass ? "pass" : "fail"}`,
+    `policy_count:${evt.policyCount}`,
     `final:${evt.final ? "approve" : "reject"}`,
+    `failed_policy_index:${evt.failedPolicyIndex}`,
     `tx:${evt.signature}`,
     `event_b64:${evt.rawBase64}`,
     `issuer:${wallet.publicKey.toBase58()}`,
@@ -473,12 +541,14 @@ function bytesToBase58(bytes: Uint8Array): string {
 }
 
 export interface AuditEvent {
+  version: number;
   mint: string;
   source: string;
   destination: string;
   amount: string;
-  allowlistPass: boolean;
-  sanctionsPass: boolean;
+  policyCount: number;
+  /** -1 when final=true (no policy failed), else the index in MetaHookConfig.policies */
+  failedPolicyIndex: number;
   final: boolean;
   signature: string;
   rawBase64: string;
@@ -487,7 +557,11 @@ export interface AuditEvent {
 /**
  * Parse the MetaHookAuditEvent from a tx's `Program data:` logs. Anchor's
  * `emit!` macro writes the event as base64-encoded `[8-byte discriminator |
- * borsh-serialized fields]`. Fields here are 3 Pubkey + u64 + 3 bool.
+ * borsh-serialized fields]`.
+ *
+ * V1.1 schema (versioned in-band so future schema bumps don't silently break):
+ *   u8 version, Pubkey mint, Pubkey source, Pubkey destination, u64 amount,
+ *   u8 policy_count, bool final_decision, i8 failed_policy_index
  */
 export function decodeAuditEvent(logs: string[], programs: Programs): AuditEvent | null {
   const programDataLines = logs.filter((l) => l.startsWith("Program data:"));
@@ -498,6 +572,9 @@ export function decodeAuditEvent(logs: string[], programs: Programs): AuditEvent
   if (!eventDef?.discriminator) return null;
   const discriminator = Uint8Array.from(eventDef.discriminator);
 
+  // 8 disc + 1 version + 96 pubkeys + 8 amount + 1 count + 1 final + 1 failed = 116
+  const MIN_LEN = 8 + 1 + 32 * 3 + 8 + 1 + 1 + 1;
+
   for (const line of programDataLines) {
     const b64 = line.replace("Program data: ", "").trim();
     let bytes: Uint8Array;
@@ -506,18 +583,16 @@ export function decodeAuditEvent(logs: string[], programs: Programs): AuditEvent
     } catch {
       continue;
     }
-    if (bytes.length < 8 + 32 * 3 + 8 + 3) continue;
+    if (bytes.length < MIN_LEN) continue;
     let match = true;
     for (let i = 0; i < 8; i++) {
-      if (bytes[i] !== discriminator[i]) {
-        match = false;
-        break;
-      }
+      if (bytes[i] !== discriminator[i]) { match = false; break; }
     }
     if (!match) continue;
 
     const buf = bytes;
     let off = 8;
+    const version = buf[off++];
     const mint = new PublicKey(buf.slice(off, off + 32));
     off += 32;
     const source = new PublicKey(buf.slice(off, off + 32));
@@ -526,17 +601,20 @@ export function decodeAuditEvent(logs: string[], programs: Programs): AuditEvent
     off += 32;
     const amount = new DataView(buf.buffer, buf.byteOffset + off, 8).getBigUint64(0, true);
     off += 8;
-    const allowlistPass = buf[off++] === 1;
-    const sanctionsPass = buf[off++] === 1;
+    const policyCount = buf[off++];
     const final = buf[off++] === 1;
+    // i8: signed byte. >127 means negative.
+    const failedRaw = buf[off++];
+    const failedPolicyIndex = failedRaw > 127 ? failedRaw - 256 : failedRaw;
 
     return {
+      version,
       mint: mint.toBase58(),
       source: source.toBase58(),
       destination: destination.toBase58(),
       amount: amount.toString(),
-      allowlistPass,
-      sanctionsPass,
+      policyCount,
+      failedPolicyIndex,
       final,
       signature: "",
       rawBase64: b64,

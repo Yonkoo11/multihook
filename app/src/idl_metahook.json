@@ -8,11 +8,169 @@
   },
   "instructions": [
     {
+      "name": "add_policy",
+      "docs": [
+        "Add a new policy to an existing config. Authority-gated.",
+        "Note: changing the policy set REQUIRES re-initializing the",
+        "ExtraAccountMetaList for the mint (size + ordering changes).",
+        "Phase 2 will add a `realloc_extra_account_meta_list` ix; for V1 the",
+        "issuer must close+recreate via off-chain tooling."
+      ],
+      "discriminator": [
+        62,
+        42,
+        248,
+        232,
+        151,
+        140,
+        199,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97,
+                  104,
+                  111,
+                  111,
+                  107,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "config.mint",
+                "account": "MetaHookConfig"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "policy",
+          "type": {
+            "defined": {
+              "name": "PolicyEntry"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "docs": [
+        "Per-mint compliance config. Set once at mint creation; the meta-hook",
+        "reads it on every transfer to know which child policies to CPI into.",
+        "`authority` is the only key allowed to modify it later.",
+        "",
+        "`policies` carries up to 8 (program_id, policy_pda) entries. The",
+        "caller is responsible for deriving each policy_pda correctly — the",
+        "canonical seed pattern is `[<policy-name>, authority]` per",
+        "POLICY_INTERFACE.md, but policies may use any seeds they choose."
+      ],
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97,
+                  104,
+                  111,
+                  111,
+                  107,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "policies",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "PolicyEntry"
+              }
+            }
+          }
+        },
+        {
+          "name": "aggregation",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "initialize_extra_account_meta_list",
       "docs": [
-        "Per-mint setup: build the ExtraAccountMetaList PDA so Token-2022 knows",
-        "to forward the reentrancy guard, both child policy program IDs, and",
-        "both child policy PDAs to the hook on every transfer."
+        "Build the ExtraAccountMetaList PDA. Reads the per-mint MetaHookConfig",
+        "to discover which (program_id, policy_pda) pairs to forward, then",
+        "emits the canonical ordering Token-2022 uses to populate",
+        "transfer-hook account contexts."
       ],
       "discriminator": [
         92,
@@ -70,10 +228,35 @@
           "name": "mint"
         },
         {
-          "name": "allowlist_authority"
-        },
-        {
-          "name": "sanctions_authority"
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97,
+                  104,
+                  111,
+                  111,
+                  107,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
         },
         {
           "name": "system_program",
@@ -85,7 +268,8 @@
     {
       "name": "initialize_reentrancy_guard",
       "docs": [
-        "One-time global setup: create the reentrancy-guard PDA."
+        "One-time global setup: create the reentrancy-guard PDA. Called once",
+        "per metahook deployment (not per mint)."
       ],
       "discriminator": [
         122,
@@ -138,9 +322,86 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "remove_policy",
+      "docs": [
+        "Remove a policy by program_id."
+      ],
+      "discriminator": [
+        80,
+        44,
+        235,
+        155,
+        23,
+        51,
+        208,
+        26
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97,
+                  104,
+                  111,
+                  111,
+                  107,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "config.mint",
+                "account": "MetaHookConfig"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "program_id",
+          "type": "pubkey"
+        }
+      ]
     }
   ],
   "accounts": [
+    {
+      "name": "MetaHookConfig",
+      "discriminator": [
+        87,
+        60,
+        124,
+        27,
+        38,
+        206,
+        242,
+        127
+      ]
+    },
     {
       "name": "ReentrancyGuard",
       "discriminator": [
@@ -188,11 +449,56 @@
     },
     {
       "code": 6003,
-      "name": "WrongChildProgram",
-      "msg": "Child policy program key did not match the configured V1 program ID"
+      "name": "InvalidPolicyCount",
+      "msg": "Config policy_count is 0 or exceeds MAX_POLICIES"
     },
     {
       "code": 6004,
+      "name": "UnsupportedAggregation",
+      "msg": "Aggregation mode not supported in V1 (only AND=0)"
+    },
+    {
+      "code": 6005,
+      "name": "ConfigOwnerMismatch",
+      "msg": "Config account is not owned by the MetaHook program"
+    },
+    {
+      "code": 6006,
+      "name": "ConfigMintMismatch",
+      "msg": "Config.mint does not match the transfer's mint"
+    },
+    {
+      "code": 6007,
+      "name": "PolicyProgramMismatch",
+      "msg": "Account-list policy program ID does not match the configured entry"
+    },
+    {
+      "code": 6008,
+      "name": "PolicyPdaMismatch",
+      "msg": "Account-list policy PDA does not match the configured entry"
+    },
+    {
+      "code": 6009,
+      "name": "PolicyListFull",
+      "msg": "Policy list is full (V1 cap = MAX_POLICIES)"
+    },
+    {
+      "code": 6010,
+      "name": "PolicyAlreadyConfigured",
+      "msg": "Policy is already in the config"
+    },
+    {
+      "code": 6011,
+      "name": "PolicyNotConfigured",
+      "msg": "Policy is not in the config"
+    },
+    {
+      "code": 6012,
+      "name": "Unauthorized",
+      "msg": "Caller is not the config authority"
+    },
+    {
+      "code": 6013,
       "name": "PolicyRejected",
       "msg": "Transfer rejected: at least one child policy returned a failure"
     }
@@ -203,6 +509,10 @@
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
           {
             "name": "mint",
             "type": "pubkey"
@@ -220,16 +530,82 @@
             "type": "u64"
           },
           {
-            "name": "allowlist_pass",
-            "type": "bool"
-          },
-          {
-            "name": "sanctions_pass",
-            "type": "bool"
+            "name": "policy_count",
+            "type": "u8"
           },
           {
             "name": "final_decision",
             "type": "bool"
+          },
+          {
+            "name": "failed_policy_index",
+            "docs": [
+              "Index into `MetaHookConfig.policies` of the FIRST policy that failed.",
+              "`-1` when `final_decision == true`."
+            ],
+            "type": "i8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MetaHookConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "aggregation",
+            "type": "u8"
+          },
+          {
+            "name": "policy_count",
+            "type": "u8"
+          },
+          {
+            "name": "policies",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "PolicyEntry"
+                  }
+                },
+                8
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PolicyEntry",
+      "docs": [
+        "One configured child policy: program ID + the policy state PDA derived",
+        "from the issuer's authority. We store both so the meta-hook does not need",
+        "to re-derive (different policies use different PDA seeds)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "program_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "policy_pda",
+            "type": "pubkey"
           }
         ]
       }

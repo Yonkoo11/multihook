@@ -1,8 +1,9 @@
 # Multi-Hook
 
-> **OpenZeppelin for Token-2022 compliance.** One transfer hook, N composable
-> child policies. Built for RWA issuers who shouldn't need a $200K vendor stack
-> to ship a regulated stablecoin.
+> **The missing public-good primitive for Token-2022 transfer-hook composition.**
+> One meta-hook program, N composable child policies, one signed audit
+> receipt per transfer. Built for RWA issuers who shouldn't need a
+> $500K Securitize-class vendor contract to ship a regulated stablecoin.
 
 🚀 **Live demo (Solana devnet):** [yonkoo11.github.io/multihook](https://yonkoo11.github.io/multihook/)
 📜 **Policy interface spec:** [`POLICY_INTERFACE.md`](./POLICY_INTERFACE.md) — fork it, ship your own child policy
@@ -41,41 +42,52 @@ That's the entire core action. Phase 1 Gate.
 ## Architecture (in a picture)
 
 ```
-                Token-2022.transferChecked
+              Token-2022.transferChecked
                           │
                           ▼ [CPI]
               ┌──────────────────────┐
-              │   metahook.execute   │ ← reentrancy guard PDA (writable)
-              │  (fallback hook)     │
+              │   metahook.execute   │ ← reads MetaHookConfig PDA per mint
+              │  (fallback hook)     │ ← reentrancy guard PDA (writable)
               └──────────────────────┘
                           │
-                          ▼ [CPI x N, sequential, AND-aggregated]
+                          ▼ [CPI × N, sequential, AND-aggregated]
+                          │   N = MetaHookConfig.policy_count (1..=8)
         ┌─────────────────┴─────────────────┐
         ▼                 ▼                 ▼
-  policy_allowlist  policy_sanctions  policy_<your_rule>
-   check_transfer    check_transfer    check_transfer
+  config.policies[0]  config.policies[1]  config.policies[N-1]
+    check_transfer      check_transfer      check_transfer
         │                 │                 │
         └────────┬────────┴────────┬────────┘
                  ▼                 ▼
-              Ok(())  ── or ──  Err("policy.<name>.fail: ...")
+              Ok(())  ── or ──  Err("policy.<name>.fail: …")
                           │
-                          ▼ MetaHookAuditEvent { mint, src, dst, amount, allowlist_pass, sanctions_pass, final_decision }
-                              emitted on success path; reverts roll back the event but
-                              the policy reason still appears in tx logs for client display
+                          ▼ MetaHookAuditEvent { version, mint, src, dst,
+                              amount, policy_count, final_decision,
+                              failed_policy_index }
+                          emitted on every transfer (revert and success);
+                          failed_policy_index = -1 on approval, else the
+                          short-circuit position in MetaHookConfig.policies
 ```
 
-## What's built (Phase 1 — submitted)
+The meta-hook does NOT hardcode child policy program IDs. Each mint's
+`MetaHookConfig` PDA stores the active `(program_id, policy_pda)` pairs.
+Adding a policy = `metahook::add_policy(entry)` (authority-gated, then
+re-init the ExtraAccountMetaList). No fork required.
+
+## What's built (V1.1 — composable per-mint config)
 
 - **4 Anchor programs deployed to devnet:**
-  - `metahook` `4o6hRdZFqeM1YbvXQhjsmMgrNuoZSmgqMkpmZELBLh9d` — fallback dispatcher + CPI orchestration + audit event
-  - `policy_allowlist` `GJHxobVdfywhTidD9u4EoYPGa9kBQVzEcZ7kDhVZehyn` — set-membership check on destination owner
-  - `policy_sanctions_ofac` `5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt` — inverted set-membership (OFAC-style stub list)
-  - `policy_sns_allowlist` `4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo` — third reference policy: gates on whether the recipient owns an authorised `.sol` domain via Solana Name Service (Bonfida). Worked example of the "compose with an external program" pattern in [POLICY_INTERFACE.md](./POLICY_INTERFACE.md)
+  - `metahook` `4o6hRdZFqeM1YbvXQhjsmMgrNuoZSmgqMkpmZELBLh9d` — config-driven dispatcher + CPI orchestration + audit event. **No hardcoded child program IDs.**
+  - `policy_allowlist` `GJHxobVdfywhTidD9u4EoYPGa9kBQVzEcZ7kDhVZehyn` — set-membership check on destination owner (V1 cap: 32 entries)
+  - `policy_sanctions_ofac` `5iz6WXUksBqCQTBVkKYdeWtRJYwMZWiofM9AvSQDJkWt` — inverted set-membership (V1 cap: 64 entries; OFAC-style stub list)
+  - `policy_sns_allowlist` `4J57Rh4w6k8VxJAptKVP2v8St273Msy9afskc16qFuTo` — third reference policy: triple-bind check (NameRecord owner + allowlist membership + name_owner==dest_owner replay protection) via Solana Name Service. Worked example of the "compose with an external program" pattern.
+- **Per-mint MetaHookConfig PDA** at `seeds = [b"metahook-config", mint]` — stores up to 8 `(program_id, policy_pda)` entries + aggregation mode + authority. The meta-hook reads it on every transfer and rejects any account-list whose program IDs / PDAs don't match the configured set. **This is what makes the composability claim true** — third-party policies slot in via `metahook::add_policy` without a code fork.
 - **Reentrancy guard** at `9kfFCZTqLtCRnRwQ4EHWXrZzFSw5Ky3Q68B6BgbA8W5r` — byte at offset 8 flips 0→1→0 across `execute()`; PDA included as writable in `ExtraAccountMetaList` so Solana's account-write exclusivity prevents recursive entry on the same tx.
-- **Anchor v0.32.1** workspace; `anchor-spl::token_2022_extensions`; `spl-transfer-hook-interface` 0.10; `spl-tlv-account-resolution` 0.10
-- **Bundled provision** — all 7-10 setup instructions land in a single signTransaction call. Bypasses Phantom's drainer-pattern detector (rapid-fire multi-tx-after-trust-grant flagged the dApp as malicious in the original 4-tx flow — verified via puppeteer + Phantom CRX harness in `scripts/phantom-e2e.mjs`).
-- **HTTP-poll confirmation** — `getSignatureStatuses` + `lastValidBlockHeight` instead of WebSocket subscription. Works on restrictive networks where wss:// is blocked.
-- **End-to-end:** 7/7 anchor integration tests pass on local validator; live demo verified via puppeteer harness — provision → expect-fail → add-allowed → retry-success → audit event decoded with `final=true`.
+- **Versioned audit event** — `MetaHookAuditEvent { version: 1, mint, source, destination, amount, policy_count, final_decision, failed_policy_index }`. The `failed_policy_index` is the AND short-circuit position in `MetaHookConfig.policies` (or `-1` on approval). Versioned in-band so future schema bumps don't silently break clients.
+- **Anchor v0.32.1** workspace; `anchor-spl::token_2022_extensions`; `spl-transfer-hook-interface` 0.10; `spl-tlv-account-resolution` 0.10. `Cargo.toml` profile.release: `lto="fat"`, `codegen-units=1`, `overflow-checks=true`.
+- **Bundled provision** — all 8-12 setup instructions land in a single signTransaction call (1156 bytes serialized for the 2-policy demo, 76 bytes under the 1232-byte legacy limit). Bypasses Phantom's drainer-pattern detector. Phase 2 → V0 transactions with Address Lookup Tables for >2 policies.
+- **HTTP-poll confirmation** — `getSignatureStatuses` + `lastValidBlockHeight` + `finalized` blockhash + 1000 microLamports/CU priority fee. Avoids both WebSocket-blocked networks and blockhash-expiry races during Phantom signing latency.
+- **End-to-end:** Anchor integration tests pass on local validator (regenerated for V1.1 config flow); live demo verified via puppeteer harness on devnet — provision → expect-fail → add-allowed → retry-success → audit event decoded with `final=true`.
 
 ## What makes this a public good
 
@@ -107,7 +119,7 @@ This project includes conceptual learning from [Verigate](https://github.com/yon
 > Token-2022 launched the transfer hook extension in 2024. Until now,
 > shipping production compliance with it meant either (a) writing a single
 > bespoke hook per mint or (b) buying into Anchorage / Fireblocks /
-> Securitize at $200K+ MSRP. Multi-Hook is the missing piece: a meta-hook
+> Securitize at $500K+ vendor contracts (per BlackRock BUIDL launch March 2024). Multi-Hook is the missing piece: a meta-hook
 > that lets you compose existing policy primitives into a custom compliance
 > stack the same way you compose middleware in Express. Fork a child policy,
 > deploy, append to your `ExtraAccountMetaList`, and you've added a new

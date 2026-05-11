@@ -123,3 +123,25 @@ export function extraMetaListPda(mint: PublicKey): PublicKey {
   );
   return pda;
 }
+
+/**
+ * Per-mint MetaHookConfig PDA. Stores the issuer's authority + the active
+ * policy set + aggregation mode. Lifted from the V1 hardcoded constants in
+ * an earlier release — now any (program_id, policy_pda) pair the issuer
+ * configures here is composable into the meta-hook without touching its code.
+ */
+export function metahookConfigPda(mint: PublicKey): PublicKey {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("metahook-config"), mint.toBuffer()],
+    METAHOOK_ID
+  );
+  return pda;
+}
+
+/**
+ * Aggregation modes for V1. AND short-circuits on first policy failure.
+ * V2 will add OR + weighted.
+ */
+export enum Aggregation {
+  And = 0,
+}

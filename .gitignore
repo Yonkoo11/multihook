@@ -1,22 +1,24 @@
-.anchor
-.DS_Store
-target
-**/*.rs.bk
-node_modules
-test-ledger
-.yarn
-
-# Don't commit deploy keypairs (or do, depending on your devnet vs prod setup; for now keep out)
-target/deploy/*-keypair.json
 
 # App build artifacts (vite dev cache); production output goes to /docs which IS committed for GH Pages
-app/dist
-app/.dev-key.json
-app/public/.dev-key.json
-app/tsconfig.tsbuildinfo
-
+# Don't commit deploy keypairs (or do, depending on your devnet vs prod setup; for now keep out)
 # Local env files (Helius API key, etc.) — NEVER commit
-app/.env
-app/.env.local
+**/*.rs.bk
+.DS_Store
+.anchor
 .env
 .env.local
+.yarn
+/tmp/multihook-*
+app/.dev-key.json
+app/.env
+app/.env.local
+app/dist
+app/public/.dev-key.json
+app/tsconfig.tsbuildinfo
+node_modules
+scripts/beats.json
+target
+target/deploy/*-keypair.json
+test-ledger
+video/judge-frames/
+video/raw-recording-v4.mp4
