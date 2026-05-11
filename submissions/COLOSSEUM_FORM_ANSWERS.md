@@ -4,7 +4,7 @@ Copy/paste fields verbatim. All under their respective char limits. Hyphens (`-`
 
 Re-measured char counts (all under limit, verified):
 - WHAT ARE YOU BUILDING: 945 / 1000
-- WHY BUILD THIS:        889 / 1000
+- WHY BUILD THIS:        899 / 1000
 - REPO CONTEXT:          472 / 500
 - BRIEF (revision):      462 / 500
 
@@ -42,13 +42,13 @@ Plus the spec at POLICY_INTERFACE.md, the public-goods artifact that lets anyone
 For RWA issuers who cannot justify $525K Securitize-class contracts, for Solana devs shipping Token-2022 mints, and for security engineers who want composable on-chain primitives instead of bespoke per-mint hooks.
 ```
 
-### Why did you decide to build this, and why build it now? (889 / 1000 chars, verified)
+### Why did you decide to build this, and why build it now? (899 / 1000 chars, verified)
 ```
-Token-2022 shipped its transfer-hook extension in early 2024. 18 months later there is still no public-good infra for composing multiple policies onto one mint. Issuers either write a bespoke hook per mint or pay Securitize / Anchorage / Fireblocks $525K+ vendor contracts (BlackRock paid Securitize that for BUIDL in March 2024). No middle ground.
+Token-2022 shipped its transfer-hook extension in early 2024. 18 months later there is still no public-good infra for composing multiple policies onto one mint. Issuers either write a bespoke hook per mint or pay Securitize / Anchorage / Fireblocks $525K+ vendor contracts (BlackRock paid Securitize $525K for BUIDL in March 2024). No middle ground.
 
-I hit this gap on a prior RWA project, Verigate (BSC, BAS attestations, 7 Solidity contracts, 75 tests). The attestation layer existed but the on-chain enforcement layer for composing multiple compliance rules did not. I worked around it with a bespoke hook. Annoying. Not reusable. The right shape is composable primitives plus a public spec.
+I hit this gap on a prior RWA project: Verigate (BSC, BAS attestations, 7 Solidity contracts, 75 tests). The attestation layer existed but the on-chain enforcement layer for composing multiple compliance rules did not. I worked around it with a bespoke hook. Annoying. Not reusable. The right shape is composable primitives plus a public spec.
 
-Frontier is the right window because Token-2022 hook adoption is just bending up. Per-mint composability needs to exist before the third issuer asks how to add their custom rule without forking.
+Frontier is the right window because Token-2022 hook adoption is just past the inflection. Per-mint composability needs to exist before the third issuer asks how to add their custom rule without forking.
 ```
 
 ### What technologies are you using or integrating with?
