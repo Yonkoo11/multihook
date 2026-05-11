@@ -7,6 +7,8 @@
 
 🚀 **Live demo (Solana devnet):** [yonkoo11.github.io/multihook](https://yonkoo11.github.io/multihook/)
 📜 **Policy interface spec:** [`POLICY_INTERFACE.md`](./POLICY_INTERFACE.md) — fork it, ship your own child policy
+🎬 **Pitch video** (90s, consumer-format): `video/metahook-demo.mp4` — the live dApp flow with voiceover
+🧑‍💻 **Technical walkthrough** (188s, code-format): `video/remotion-tech/out/metahook-technical.mp4` — programmatic Remotion-rendered, no audio, code + terminal + Solscan proof
 🪝 **Submission for:** Solana Frontier 2026 (Public Goods · Standout · Stretch: Grand Champion)
 
 ---
