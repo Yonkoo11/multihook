@@ -31,8 +31,15 @@ We **read the SNS account directly** rather than CPI'ing into the SNS program. T
 ### Spec referenceable by other policies
 `policy-sns-allowlist` is documented in `POLICY_INTERFACE.md` as the worked example of the "compose with an external program" pattern — the second pattern after the standalone `policy-allowlist`. Anyone reading the spec to ship their own policy now has a Bonfida-integrated reference to crib from.
 
-## What we did NOT do
-- We did NOT integrate SNS resolution into the live demo's two-policy provisioning flow — that would require redeploying the `metahook` program to expand its `ExtraAccountMetaList` from 2 policies to 3, which would invalidate existing demo state on devnet. The SNS policy is shipped as a standalone reference + spec entry instead. An issuer wiring SNS into their own MetaHook deployment follows the documented pattern.
+## V1.1 update — slotting SNS into a live mint takes ONE call
+As of V1.1 (commit `a6485dc`), the meta-hook reads its policy set from a per-mint `MetaHookConfig` PDA at every transfer. Adding SNS as a third policy on a live MetaHook'd mint is now a single `metahook::add_policy({ programId: <SNS_POLICY_ID>, policyPda: <SNS_PDA> })` call (authority-gated) followed by re-init of the ExtraAccountMetaList. **No fork of the meta-hook required.** The hardcoded V1 limitation is gone.
+
+The on-chain demo at `https://yonkoo11.github.io/multihook/demo/` still ships the 2-policy stack [allowlist, sanctions] for the standard demo flow because the bundled provision tx is at 1156/1232 bytes — adding SNS as a third pre-provisioned policy needs Versioned Transactions + ALT to fit (Phase 2 fast follow). Issuers wiring SNS into their own deployments are not size-constrained because they can provision in two txs.
+
+## What's NOT yet shipped
+- SNS-integrated UI flow on the demo page (the SNS allowlist mutation surface is documented but not exposed in the demo's HTML — issuers using the policy programmatically follow the spec).
+- Production-grade SNS NameRecord verification at `add_allowed_domain` time (V1 stores opaque PDA bytes; ideally we'd require the NameRecord account at add time and verify owner + ownership in the same tx).
+- The live demo flow does not visually demonstrate the SNS policy in action. The proof is in `programs/policy-sns-allowlist/src/lib.rs:88-110` (the triple-bind security check) + the deployed program ID being verifiable on Solscan.
 
 ## Repo
 https://github.com/Yonkoo11/multihook (MIT)
