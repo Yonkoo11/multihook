@@ -70,6 +70,37 @@ echo "      ok"
 
 # --- Start preview server ----------------------------------------------------
 
+# --- Wipe + re-onboard puppeteer Phantom profile -----------------------------
+# We always start from a clean profile so the auto-unlock has a known
+# password (avoiding "I forgot the password I set last time" failure mode).
+# Costs ~30-45s but makes the recording deterministic.
+
+echo "[1.5/5] wiping puppeteer Phantom profile + re-onboarding..."
+rm -rf /tmp/multihook-phantom-profile
+ONBOARD_ONLY=1 PHANTOM_PASSWORD="${PHANTOM_PASSWORD:-PhantomTest!2026Demo}" \
+  node scripts/phantom-e2e.mjs > /tmp/multihook-onboard.log 2>&1 &
+ONBOARD_PID=$!
+# Give onboarding up to 90s
+for i in {1..90}; do
+  if ! kill -0 $ONBOARD_PID 2>/dev/null; then break; fi
+  sleep 1
+done
+if kill -0 $ONBOARD_PID 2>/dev/null; then
+  echo "      onboarding hung past 90s; killing"
+  kill -9 $ONBOARD_PID 2>/dev/null || true
+  echo "      tail of log:"
+  tail -15 /tmp/multihook-onboard.log
+  exit 1
+fi
+wait $ONBOARD_PID 2>/dev/null
+ONBOARD_RC=$?
+if [[ $ONBOARD_RC -ne 0 ]]; then
+  echo "      onboarding failed (exit $ONBOARD_RC):"
+  tail -20 /tmp/multihook-onboard.log
+  exit 1
+fi
+echo "      onboarded with default password"
+
 echo "[2/5] starting vite preview on :$PREVIEW_PORT..."
 cd app
 yarn preview --port $PREVIEW_PORT --strictPort > /tmp/multihook-preview.log 2>&1 &

@@ -603,6 +603,11 @@ async function main() {
 
   try {
     await onboardPhantom(browser);
+    if (process.env.ONBOARD_ONLY === "1") {
+      console.log("\n✅ Phantom onboarded — exiting (ONBOARD_ONLY=1)");
+      await browser.close();
+      process.exit(0);
+    }
     // Skip explicit devnet switch — Phantom signs whatever the dApp's RPC
     // gives it; the "network" toggle is just a UI affordance for showing
     // balances. Our dApp connects to devnet directly.

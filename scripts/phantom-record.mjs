@@ -138,15 +138,57 @@ async function openPhantomPopup(browser) {
 async function unlockOrOnboard(browser) {
   const popup = await openPhantomPopup(browser);
   if (!popup) throw new Error("Phantom service worker not found");
-  await sleep(1200);
-  const onboarding = popup.url().includes("/onboarding");
-  if (onboarding) throw new Error("Phantom not onboarded — run scripts/phantom-e2e.mjs once first to import the test key");
+
+  // Wait up to 15s for Phantom's React UI to actually render. The previous
+  // 1.2s sleep tripped on empty/loading DOM and skipped unlock entirely.
+  // Three states are possible: (a) onboarding, (b) password-prompt, (c) main
+  // wallet UI (already unlocked).
+  await Promise.race([
+    popup.waitForSelector("input[type='password']", { timeout: 15000 }).catch(() => null),
+    popup.waitForFunction(
+      () => {
+        const t = document.body.innerText.toLowerCase();
+        return t.includes("send") && (t.includes("receive") || t.includes("swap"));
+      },
+      { timeout: 15000 },
+    ).catch(() => null),
+  ]);
+
+  if (popup.url().includes("/onboarding")) {
+    await popup.close().catch(() => {});
+    throw new Error("Phantom not onboarded — record-path-a.sh should have onboarded first; profile may be corrupt. Try `rm -rf /tmp/multihook-phantom-profile` and re-run.");
+  }
+
   const hasPwd = await popup.evaluate(() => !!document.querySelector("input[type='password']"));
   if (hasPwd) {
-    await popup.type("input[type='password']", PHANTOM_PASSWORD);
-    await popup.keyboard.press("Enter");
-    await sleep(1500);
+    await popup.type("input[type='password']", PHANTOM_PASSWORD, { delay: 30 });
+    // Try Unlock button first (more reliable than Enter on some Phantom versions)
+    const unlockBtn = await popup.evaluateHandle(() => {
+      return [...document.querySelectorAll("button,div[role='button']")].find(
+        b => /^unlock$/i.test((b.textContent || "").trim()) && !b.disabled,
+      ) ?? null;
+    });
+    const btnEl = unlockBtn.asElement();
+    if (btnEl) {
+      await btnEl.click();
+    } else {
+      await popup.keyboard.press("Enter");
+    }
+    // Wait for main wallet UI to confirm unlock succeeded
+    const unlocked = await popup.waitForFunction(
+      () => {
+        const t = document.body.innerText.toLowerCase();
+        return t.includes("send") && (t.includes("receive") || t.includes("swap"));
+      },
+      { timeout: 10000 },
+    ).catch(() => null);
+    if (!unlocked) {
+      await popup.close().catch(() => {});
+      throw new Error(`PHANTOM_PASSWORD did not unlock the puppeteer profile. record-path-a.sh wipes + re-onboards on every run; if you see this it means the onboarding step failed silently.`);
+    }
     beat("phantom-unlocked");
+  } else {
+    beat("phantom-already-unlocked");
   }
   await popup.close().catch(() => {});
 }
